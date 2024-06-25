@@ -1,0 +1,23 @@
+{
+  "name": "ios-chat",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "build:watch": "node esbuild.mjs --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "0.21.5",
+    "ts-lit-plugin": "^2.0.2",
+    "typescript": "^5.5.2"
+  },
+  "dependencies": {
+    "@types/uuid": "^10.0.0",
+    "lit": "^3.1.4",
+    "uuid": "^10.0.0"
+  }
+}
