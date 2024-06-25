@@ -12,11 +12,6 @@ class Chat extends LitElement {
   static override styles = [
     globalStyles,
     css`
-      @font-face {
-        font-family: 'SF-Pro';
-        src: url("/src/assets/SF-Pro.ttf");
-      }
-
       :host {
         --dark-theme-bg: #000;
         --light-theme-bg: #fff;
@@ -36,7 +31,7 @@ class Chat extends LitElement {
         display: flex;
         flex-direction: column;
         height: 100%;
-        font-family: 'SF-Pro';
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif
       }
 
       ios-chat-screen {
@@ -162,7 +157,28 @@ class Chat extends LitElement {
 
     ChatManager.roomCreated(this._id, this, () => {
       this._messageList = [...ChatManager.getMessages(this._id)];
+      
+      if (!this.screen) return;
+      
+      this.screen.dispatchEvent(
+        new CustomEvent("input-fired", {
+          detail: {
+            width: this.textArea.offsetWidth,
+          },
+        })
+      )
     });
+
+    this.addEventListener("answer-loading-start", () => {
+      ChatManager.sendMessage("sender", this._id, {
+        type: "loading",
+        content: "",
+      });
+    })
+
+    this.addEventListener("answer-loading-end", () => {
+      ChatManager.popMessage(this._id);
+    })
 
     window.addEventListener("resize", () => this.inputFocusHandler());
   }
@@ -208,14 +224,6 @@ class Chat extends LitElement {
       type: "text",
       content,
     });
-
-    this.screen.dispatchEvent(
-      new CustomEvent("input-fired", {
-        detail: {
-          width: this.textArea.offsetWidth,
-        },
-      })
-    );
 
     this.textArea.value = "";
     this.textArea.style.height = '';

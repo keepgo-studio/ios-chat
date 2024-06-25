@@ -7,7 +7,7 @@ declare global {
     messages: Array<ChatMessage>;
   };
 
-  type ChatMessageType = TextType | ImgType | AudioType;
+  type ChatMessageType = TextType | ImgType | AudioType | "loading";
   
   type Role = 'sender' | 'receiver';
   type TextType = 'text';
@@ -55,6 +55,8 @@ declare global {
 
   interface HTMLElementEventMap {
     "send-message": SendMessageEvent;
+    "answer-loading-start": CustomEvent;
+    "answer-loading-end": CustomEvent;
     "input-fired": InputFiredEvent;
     "input-active": InputActiveEvent;
     "scrolling": ScrollingEvent;

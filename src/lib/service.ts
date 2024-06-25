@@ -21,7 +21,7 @@ export default class ChatManager {
   static roomCreated(
     roomId: string,
     ref: HTMLElement,
-    sendCallback: () => void
+    afterMessage: () => void
   ) {
     if (roomId in this.rooms) {
       throw new Error(`${roomId} is already exist`);
@@ -51,7 +51,7 @@ export default class ChatManager {
 
       this.rooms[roomId].messages.push(msg);
 
-      sendCallback();
+      afterMessage();
       sendMessageToListeners(roomId, msg);
     });
   }
@@ -65,6 +65,10 @@ export default class ChatManager {
         },
       })
     );
+  }
+
+  static popMessage(roomId: string) {
+    this.rooms[roomId].messages.pop();
   }
 
   static listen(roomId: string, callback: ListenerCallback) {

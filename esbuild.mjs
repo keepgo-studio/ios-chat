@@ -37,7 +37,7 @@ const args = getArgs();
 
 const esmSettings = {
   entryPoints: ['src/index.ts'],
-  outdir: 'build',
+  outdir: 'build/esm',
   bundle: true,
   minify: true,
   sourcemap: true,
@@ -48,7 +48,7 @@ const esmSettings = {
 
 const umdSetting = {
   entryPoints: ['src/index.ts'],
-  outfile: 'build/bundle.js',
+  outfile: 'build/umd/bundle.js',
   bundle: true,
   minify: true,
   sourcemap: true,

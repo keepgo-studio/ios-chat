@@ -34,6 +34,9 @@ class KineticScroll extends LitElement {
   @query("section")
   container!: HTMLElement;
 
+  @query("slot")
+  slotElem!: HTMLSlotElement;
+
   override render() {
     return html`<section><slot></slot></section>`;
   }
@@ -49,14 +52,22 @@ class KineticScroll extends LitElement {
 
     let scrollLimitPx = 0;
 
-    const init = () => {
-      scrollLimitPx = this.scrollHeight;
-      scrollLimitPx -= this.offsetHeight;
+    const child = this.slotElem.assignedElements({ flatten: true })[0] as HTMLElement;
+
+    const trackChildStyle = async () => {
+      const h = child.scrollHeight - this.offsetHeight;
+      
+      if (scrollLimitPx !== h) {
+        scrollLimitPx = h;
+      }
+
+      await delay(500);
+
+      requestAnimationFrame(trackChildStyle);
     }
 
-    init();
-    window.addEventListener("resize", debounce(init, 500));
-    
+    requestAnimationFrame(trackChildStyle);
+
     const velocity = new Velocity();
     let topPadding = 0;
     let bottomPadding = 0;
@@ -175,14 +186,18 @@ class KineticScroll extends LitElement {
     let prevDest = 0;
     const fireEvent = async () => {
       const cs = window.getComputedStyle(this.container);
-
       const pt = pxToNumber(cs.paddingTop);
-      const currentPosition = pt > 0 ? -pt : this._position;
+
+      let currentPosition = this._position;
+
+      if ((pt > 0 && this._position < 0.5)) {
+        currentPosition = -pt;
+      }
 
       if (prevDest !== currentPosition) {
         this.dispatchEvent(new CustomEvent("scrolling", {
           detail: {
-            maxHeight: pxToNumber(cs.height),
+            maxHeight: scrollLimitPx + this.offsetHeight,
             y: currentPosition
           }
         }));

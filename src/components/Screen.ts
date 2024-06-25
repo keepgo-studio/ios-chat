@@ -43,6 +43,19 @@ class Screen extends LitElement {
         white-space: pre-line;
         user-select: text;
       }
+      img {
+        border-radius: var(--border-radius);
+        width: 100%;
+        max-height: 400px;
+        object-fit: cover;
+        user-select: none;
+      }
+      ios-chat-spinner {
+        display: block;
+        width: 50px;
+        height: 40px;
+        padding: 0.2em 1em;
+      }
 
       .message.with-tail {
         margin-bottom: 6px;
@@ -134,6 +147,8 @@ class Screen extends LitElement {
         return html`<audio src=${content}></audio>`;
       case "img":
         return html`<img src=${content} />`;
+      case "loading":
+        return html`<ios-chat-spinner></ios-chat-spinner>`
     }
   }
 
@@ -149,7 +164,7 @@ class Screen extends LitElement {
   async renderRecent() {
     const recent = this.data[this.data.length - 1];
     const recentElem = this.shadowRoot!.getElementById(recent.id)!;
-    const contentElem = recentElem!.querySelector("p, audio, img") as HTMLElement;
+    const contentElem = recentElem!.querySelector("p, audio, img, ios-chat-spinner") as HTMLElement;
     const width = contentElem.offsetWidth;
     const ulWidth = this.ul.offsetWidth;
     const ulHeight = this.ul.offsetHeight;
@@ -166,7 +181,7 @@ class Screen extends LitElement {
 
     // init style
     recentElem.style.background = "var(--input-bg)";
-    recentElem.style.zIndex = "100";
+    recentElem.style.zIndex = recent.role === "sender" ? "100" : "";
     recentElem.style.top = top + "px";
     recentElem.style.width = `${this._inputWidth}px`;
     recentElem.style.maxWidth = "none";
@@ -223,9 +238,11 @@ class Screen extends LitElement {
   scrollingHandler(e: ScrollingEvent) {
     const { y, maxHeight } = e.detail;
 
+    this.scrollbar.setAttribute("viewportLength", this.scrollContainer.offsetHeight.toString());
     this.scrollbar.setAttribute("totalLength", maxHeight.toString());
     this.scrollbar.setAttribute("current", y.toString());
   }
+
 
   protected override render() {
     return html`

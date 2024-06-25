@@ -12,10 +12,14 @@ export function addRoomListener(roomId: string, callback: ListenerCallback) {
   ChatManager.listen(roomId, callback);
 }
 
-export function startAnswerLoading() {
-
+export function startAnswerLoading(roomId: string) {
+  ChatManager.rooms[roomId].ref.dispatchEvent(
+    new CustomEvent("answer-loading-start")
+  );
 }
 
-export function endAnswerLoading() {
-
+export function endAnswerLoading(roomId: string) {
+  ChatManager.rooms[roomId].ref.dispatchEvent(
+    new CustomEvent("answer-loading-end")
+  );
 }

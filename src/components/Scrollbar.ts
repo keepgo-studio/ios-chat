@@ -34,6 +34,9 @@ class Scrollbar extends LitElement {
   `;
 
   @property({ type: Number, reflect: true })
+  viewportLength = 0;
+
+  @property({ type: Number, reflect: true })
   totalLength = 0;
 
   @property({ type: Number, reflect: true })
@@ -52,15 +55,13 @@ class Scrollbar extends LitElement {
 
   override updated() {
     const height = this.offsetHeight;
-    const thumbSize = (height / this.totalLength) * height;
+    const thumbSize = (this.viewportLength / this.totalLength) * height;
 
     this.thumb.style.height = `${thumbSize}px`;
 
-    this.thumb.style.top = `${minMax(
-      this.current,
-      -thumbSize + 10,
-      height - 10
-    )}px`;
+    const top = (this.current / (this.totalLength - this.viewportLength)) * (height - thumbSize);
+    
+    this.thumb.style.top = `${minMax(top, -thumbSize + 10, height - 10)}px`;
   }
 }
 
