@@ -36,23 +36,28 @@ declare global {
   interface SendMessageEvent extends CustomEvent {
     detail: SendMessageEventDetail;
   }
-  type InputFiredEventDetail = {
-    width: number;
-  };
   interface InputFiredEvent extends CustomEvent {
-    detail: InputFiredEventDetail;
+    detail: {
+      width: number
+    }
   }
-  type InputActiveEventDetail = {
-    height: number;
-  };
   interface InputActiveEvent extends CustomEvent {
-    detail: InputActiveEventDetail;
+    detail: {
+      height: number;
+    }
+  }
+  interface ScrollingEvent extends CustomEvent {
+    detail: {
+      maxHeight: number; 
+      y: number;
+    };
   }
 
   interface HTMLElementEventMap {
     "send-message": SendMessageEvent;
     "input-fired": InputFiredEvent;
     "input-active": InputActiveEvent;
+    "scrolling": ScrollingEvent;
   }
 }
 

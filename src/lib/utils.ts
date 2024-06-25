@@ -1,5 +1,16 @@
+export function isOnlySpaces(str: string) {
+  return str.trim().length === 0;
+}
+
 export function delay(miliSec: number) {
   return new Promise((res) => setTimeout(() => res(true), miliSec));
+}
+
+export function minMax(val: number, min: number, max?: number) {
+  if (val < min) return min;
+  else if (max && val > max) return max;
+
+  return val;
 }
 
 type Procedure = (...args: any[]) => void;
@@ -43,13 +54,12 @@ export function cancelMoving(elem: HTMLElement) {
 
 export async function moveTo(
   elem: HTMLElement,
-  { from, dest, duration, styleAttr = "scroll", ease = "easeInOutQuad", fromRef }: {
+  { from, dest, duration, styleAttr = "scroll", ease = "easeInOutQuad" }: {
     from: number;
     dest: number;
     duration: number;
     styleAttr?: "scroll" | "top" | "padding-top" | "padding-bottom";
     ease?: keyof typeof Ease;
-    fromRef?: Object
   }
 ) {
   movingMap.set(elem, true);
@@ -73,8 +83,6 @@ export async function moveTo(
       } else if (styleAttr === "padding-bottom") {
         elem.style.paddingBottom = `${dis}px`;
       }
-
-      if (fromRef) fromRef = dis;
   
       if (time < 1) requestAnimationFrame(scroll);
       else {
@@ -87,159 +95,32 @@ export async function moveTo(
   })
 }
 
-class Velocity {
-  y?: number;
-  time = 0;
+export class Velocity {
+  private _time = 0;
+  x = 0;
+  y = 0;
 
-  getV(y: number) {
-    let v = 0;
-    const newTime = Date.now();
-
-    if (this.y !== undefined) {
-      const dy = y - this.y,
-            timeElapsed = newTime - this.time;
-
-      v = dy / timeElapsed;
-    }
-
+  set(x: number, y: number) {
+    this.x = x;
     this.y = y;
-    this.time = newTime;
+    this._time = Date.now();
+  }
 
-    return v;
+  get(x: number, y: number, type: 'hor' | 'ver' | 'both') {
+    let v = 0;
+    const newTime = Date.now(),
+          timeElapsed = newTime - this._time,
+          dx = x - this.x,
+          dy = y - this.y;
+
+    switch(type) {
+      case "both": return Math.sqrt(dx * dx + dy * dy) / timeElapsed;
+      case "hor": return dx / timeElapsed;
+      case "ver": return dy / timeElapsed;
+    }
   }
 }
 
-function pxToNumber(pxStr: string) {
+export function pxToNumber(pxStr: string) {
   return Number(pxStr.split("px")[0]);
-}
-
-export function attachKineticScroll(elem: HTMLElement, root: HTMLElement) {
-  const positionMap = {
-    y: 0,
-  }
-  let from = 0;
-  let wheelTimer: number | undefined = undefined;
-
-  elem.addEventListener("wheel", (e: WheelEvent) => {
-    cancelMoving(elem);
-    clearTimeout(wheelTimer);
-    
-    wheelTimer = setTimeout(() => {
-      from = elem.scrollTop;
-      moveTo(elem, {
-        from,
-        dest: from + e.deltaY,
-        duration: 2000,
-        ease: "easeOutExpo"
-      })
-    }, 100);
-  }, { passive: true });
-
-// -------------------------------------------------
-  const cs = window.getComputedStyle(elem);
-  let initPaddingTop = pxToNumber(cs.paddingTop),
-      initPaddingBottom = pxToNumber(cs.paddingBottom);
-  
-  let maxHeight = elem.scrollHeight - elem.offsetHeight;
-
-  window.addEventListener("resize", debounce(() => {
-    const newCs = window.getComputedStyle(elem);
-    
-    initPaddingTop = pxToNumber(newCs.paddingTop),
-    initPaddingBottom = pxToNumber(newCs.paddingBottom);
-
-    maxHeight = elem.scrollHeight - elem.offsetHeight;
-  }, 500));
-
-// -------------------------------------------------
-  const velocity = new Velocity();
-  
-  let dragStart = false;
-  let paddingBottom = 0,
-      paddingTop = 0;
-
-  elem.style.position = 'relative';
-
-  function calculateBounce(scrollDest: number) {    
-    if (scrollDest >= maxHeight) {
-      const distanceBottom = (scrollDest - maxHeight) / 2;
-
-      console.log("diff", paddingBottom, distanceBottom);
-      paddingBottom = distanceBottom;
-      elem.style.paddingBottom = `${paddingBottom}px`;
-    }
-
-    if (scrollDest <= 0) {
-      const distanceTop = -scrollDest / 2;
-
-      paddingTop = Math.max(distanceTop, initPaddingTop);
-      elem.style.paddingTop = `${paddingTop}px`;
-    }
-  }
-
-  root.addEventListener("mousedown", (e) => {
-    dragStart = true;
-    
-    cancelMoving(elem);
-    
-    from = elem.scrollTop;
-    // paddingBottom = pxToNumber(elem.style.paddingBottom);
-    // paddingTop = pxToNumber(elem.style.paddingTop);
-    console.log("down", paddingTop, paddingBottom);
-    velocity.getV(e.clientY);
-  });
-// [ ] 어떻게 해야 scrollPosition을 살릴까
-  root.addEventListener("mousemove", (e) => {
-    if (!dragStart) return;
-
-    from += -e.movementY;
-
-    elem.scrollTop = from;
-
-    calculateBounce(from);
-  });
-
-  const mouseDetachListener = (e: MouseEvent) => {
-    if (!dragStart) return;
-    
-    dragStart = false;
-
-    const dis = Math.abs(velocity.y! - e.clientY),
-          v = velocity.getV(e.clientY),
-          mav = roundToThirdDecimal(0.3 * -v),
-          dest = Math.abs(v) < 0.65 ? from : (from + maxHeight * mav);
-
-    moveTo(elem, {
-      from,
-      dest,
-      duration: 2000,
-      styleAttr: "scroll",
-      ease: "easeOutExpo",
-    });
-    
-    // calculateBounce(dest);
-    console.log("up", from, dest);
-    if (paddingBottom > initPaddingBottom) {
-      // moveTo(elem, {
-      //   from: paddingBottom,
-      //   dest: initPaddingBottom,
-      //   duration: 2000,
-      //   styleAttr: "padding-bottom",
-      //   ease: "easeOutExpo"
-      // });
-    }
-
-    if (paddingTop > initPaddingTop) {
-      moveTo(elem, {
-        from: paddingTop,
-        dest: initPaddingTop,
-        duration: 2000,
-        styleAttr: "padding-top",
-        ease: "easeOutExpo"
-      });
-    }
-  }
-
-  root.addEventListener("mouseup", mouseDetachListener);
-  root.addEventListener("mouseleave", mouseDetachListener);
 }

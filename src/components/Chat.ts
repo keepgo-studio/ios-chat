@@ -1,10 +1,11 @@
 import { globalStyles } from "@/lib/core";
 import ChatManager from "@/lib/service";
-import { LitElement, PropertyValueMap, css, html } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 
 import plusSvg from "../assets/plus.svg";
 import arrowSvg from "../assets/arrow.up.circle.fill.svg";
+import { isOnlySpaces } from "@/lib/utils";
 
 @customElement("ios-chat")
 class Chat extends LitElement {
@@ -23,6 +24,7 @@ class Chat extends LitElement {
         --border-radius: clamp(20px, 2vw, 32px);
         --input-bg: rgba(10, 10, 10, 0.75);
         --blue: #39a7fc;
+        --dark-gray: #26262a;
 
         display: block;
         width: 100%;
@@ -41,7 +43,6 @@ class Chat extends LitElement {
         padding: 0 6px;
         flex: 1;
         display: block;
-        overflow-y: hidden
       }
 
       .chat-input {
@@ -78,7 +79,7 @@ class Chat extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: #26262a;
+        background-color: var(--dark-gray);
         border-radius: 999px;
         border: none;
         cursor: pointer;
@@ -101,12 +102,12 @@ class Chat extends LitElement {
         height: 2.4em;
         font-size: inherit;
         border-radius: var(--border-radius);
-        padding: 0.6em 1em;
+        padding: 0.6em 2.5em 0.6em 1em;
         line-height: 1.2em;
         color: #fff;
         outline: none;
         border: none;
-        box-shadow: inset 0 0 0 1px #26262a;
+        box-shadow: inset 0 0 0 1px var(--dark-gray);
         background-color: var(--input-bg);
         caret-color: #1588fe;
         resize: none;
@@ -197,10 +198,11 @@ class Chat extends LitElement {
     `;
   }
 
+  
   send() {
     const content = this.textArea.value;
 
-    if (!content) return;
+    if (isOnlySpaces(content)) return;
 
     ChatManager.sendMessage("sender", this._id, {
       type: "text",
