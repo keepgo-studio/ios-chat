@@ -1,5 +1,5 @@
 import { minMax } from "@/lib/utils";
-import { LitElement, css, html } from "lit";
+import { LitElement, PropertyValueMap, css, html } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 
 @customElement("ios-chat-scrollbar")
@@ -28,7 +28,7 @@ class Scrollbar extends LitElement {
     .thumb {
       position: relative;
       width: 100%;
-      background-color: var(--dark-gray);
+      background-color: #fff;
       border-radius: 999px;
     }
   `;
@@ -53,15 +53,19 @@ class Scrollbar extends LitElement {
     `;
   }
 
-  override updated() {
+  
+  protected override updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
     const height = this.offsetHeight;
     const thumbSize = (this.viewportLength / this.totalLength) * height;
 
-    this.thumb.style.height = `${thumbSize}px`;
+    if (_changedProperties.has("totalLength") || _changedProperties.has("viewportLength")) {
+      this.thumb.style.height = `${thumbSize}px`;
+    }
 
-    const top = (this.current / (this.totalLength - this.viewportLength)) * (height - thumbSize);
-    
-    this.thumb.style.top = `${minMax(top, -thumbSize + 10, height - 10)}px`;
+    if (_changedProperties.has("current")) {
+      const top = (this.current / (this.totalLength - this.viewportLength)) * (height - thumbSize);
+      this.thumb.style.top = `${minMax(top, -thumbSize + 10, height - 10)}px`;
+    }
   }
 }
 

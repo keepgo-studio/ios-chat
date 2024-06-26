@@ -31,7 +31,8 @@ class Chat extends LitElement {
         display: flex;
         flex-direction: column;
         height: 100%;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        position: relative;        
       }
 
       ios-chat-screen {
@@ -107,6 +108,10 @@ class Chat extends LitElement {
         caret-color: #1588fe;
         resize: none;
       }
+      textarea:disabled {
+        cursor: not-allowed;
+        filter: brightness(0.5);
+      }
       textarea::-webkit-scrollbar {
         display: none;
       }
@@ -136,6 +141,9 @@ class Chat extends LitElement {
   @state()
   _id: string = this.getAttribute("room-id") ?? "";
 
+  @state()
+  _textDisabled = false;
+
   @query("ios-chat-screen")
   screen!: HTMLElement;
   
@@ -157,7 +165,7 @@ class Chat extends LitElement {
 
     ChatManager.roomCreated(this._id, this, () => {
       this._messageList = [...ChatManager.getMessages(this._id)];
-      
+
       if (!this.screen) return;
       
       this.screen.dispatchEvent(
@@ -170,14 +178,19 @@ class Chat extends LitElement {
     });
 
     this.addEventListener("answer-loading-start", () => {
-      ChatManager.sendMessage("sender", this._id, {
+      ChatManager.sendMessage("receiver", this._id, {
         type: "loading",
         content: "",
       });
+
+      this._textDisabled = true;
     })
 
     this.addEventListener("answer-loading-end", () => {
       ChatManager.popMessage(this._id);
+
+      this.screen.dispatchEvent(new CustomEvent("pop"));
+      this._textDisabled = false;
     })
 
     window.addEventListener("resize", () => this.inputFocusHandler());
@@ -198,6 +211,7 @@ class Chat extends LitElement {
           <div class="textarea-container">
             <textarea
               placeholder="Chat"
+              ?disabled=${this._textDisabled}
               @keypress=${this.keyHandler}
               @click=${this.inputFocusHandler}
               @input=${this.inputFocusHandler}
@@ -213,7 +227,6 @@ class Chat extends LitElement {
       </div>
     `;
   }
-
   
   send() {
     const content = this.textArea.value;

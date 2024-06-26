@@ -204,7 +204,7 @@ class KineticScroll extends LitElement {
       }
       prevDest = currentPosition;
 
-      await delay(10);
+      await delay(15);
 
       requestAnimationFrame(fireEvent);  
     }
