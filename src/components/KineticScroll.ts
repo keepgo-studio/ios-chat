@@ -21,6 +21,7 @@ class KineticScroll extends LitElement {
       top: 0;
       left: 0;
       width: 100%;
+      min-height: 100%;
     }
   `;
 
@@ -45,10 +46,6 @@ class KineticScroll extends LitElement {
     this.addEventListener("scroll", () => {
       this._position = this.scrollTop;
     }, { passive: true });
-
-    if (this.startAt) {
-      this.scrollTo(0, this.scrollHeight);
-    }
 
     let scrollLimitPx = 0;
 
@@ -105,31 +102,15 @@ class KineticScroll extends LitElement {
       calculateBounce();
     })
 
-    const mouseDetachListener = async (e:MouseEvent) => {
-      if (!this._draging) return;
-
-      this._draging = false;
-
-      const v = velocity.get(e.clientX, e.clientY, "ver"),
-            mav = roundToThirdDecimal(0.2 * -v),
-            reserveDest = Math.abs(v) < 0.65 ? this._dest : (this._dest + scrollLimitPx * mav);
-
-      moveTo(this, {
-        from: this._dest,
-        dest: reserveDest,
-        duration: 2000,
-        styleAttr: "scroll",
-        ease: "easeOutExpo"
-      });
-
-      if (this._dest < scrollLimitPx && reserveDest > scrollLimitPx) {
-        bottomPadding = (reserveDest - scrollLimitPx) / 2;
+    const bottomRender = async (dest: number) => {
+      if (this._dest < scrollLimitPx && dest > scrollLimitPx) {
+        bottomPadding = (dest - scrollLimitPx) / 2;
 
         await moveTo(this.container, {
           from: 0,
           dest: bottomPadding,
           duration: 150,
-          styleAttr: "padding-bottom",
+          styleAttr: "paddingBottom",
           ease: "easeOutExpo"
         });
       }
@@ -138,29 +119,50 @@ class KineticScroll extends LitElement {
         from: bottomPadding,
         dest: 0,
         duration: 1000,
-        styleAttr: "padding-bottom",
+        styleAttr: "paddingBottom",
         ease: "easeOutExpo"
       });
+    }
 
-      if (this._position > 0 && reserveDest < 0) {
-        topPadding = -reserveDest / 2;
+    const topRender = async (dest: number) => {
+      if (this._position > 0 && dest < 0) {
+        topPadding = -dest / 2;
 
         await moveTo(this.container, {
             from: 0,
             dest: topPadding,
             duration: 150,
-            styleAttr: "padding-top",
+            styleAttr: "paddingTop",
             ease: "easeOutExpo"
         });
       }
-
       moveTo(this.container, {
         from: topPadding,
         dest: 0,
         duration: 1000,
-        styleAttr: "padding-top",
+        styleAttr: "paddingTop",
         ease: "easeOutExpo"
       });
+    }
+
+    const mouseDetachListener = async (e:MouseEvent) => {
+      if (!this._draging) return;
+
+      this._draging = false;
+
+      const v = velocity.get(e.clientX, e.clientY, "ver"),
+            mav = roundToThirdDecimal(0.3 * -v),
+            reserveDest = Math.abs(v) < 0.65 ? this._dest : (this._dest + scrollLimitPx * mav);
+
+      moveTo(this, {
+        from: this._dest,
+        dest: reserveDest,
+        duration: 2000,
+        ease: "easeOutExpo",
+      });
+
+      topRender(reserveDest);
+      bottomRender(reserveDest);
     }
 
     this.addEventListener("mouseup", mouseDetachListener);
@@ -204,11 +206,15 @@ class KineticScroll extends LitElement {
       }
       prevDest = currentPosition;
 
-      await delay(15);
+      await delay(30);
 
       requestAnimationFrame(fireEvent);  
     }
     requestAnimationFrame(fireEvent);
+
+    if (this.startAt) {
+      this.scrollTo(0, this.scrollHeight);
+    }
   }
 }
 

@@ -60,6 +60,7 @@ declare global {
     "input-fired": InputFiredEvent;
     "input-active": InputActiveEvent;
     "scrolling": ScrollingEvent;
+    "loaded": CustomEvent;
   }
 }
 

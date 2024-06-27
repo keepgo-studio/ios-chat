@@ -28,10 +28,13 @@ class Scrollbar extends LitElement {
     .thumb {
       position: relative;
       width: 100%;
-      background-color: #fff;
+      background-color: rgb(116 116 116);
       border-radius: 999px;
+      transition: ease 100ms;
     }
   `;
+
+  private _stId = 0;
 
   @property({ type: Number, reflect: true })
   viewportLength = 0;
@@ -56,15 +59,31 @@ class Scrollbar extends LitElement {
   
   protected override updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
     const height = this.offsetHeight;
-    const thumbSize = (this.viewportLength / this.totalLength) * height;
+    const ratio = (this.viewportLength / this.totalLength);
+    const thumbSize = (ratio >= 1 ? 0 : ratio) * height;
 
     if (_changedProperties.has("totalLength") || _changedProperties.has("viewportLength")) {
       this.thumb.style.height = `${thumbSize}px`;
     }
 
     if (_changedProperties.has("current")) {
-      const top = (this.current / (this.totalLength - this.viewportLength)) * (height - thumbSize);
+      let top = 0;
+      
+      clearTimeout(this._stId);
+      this.thumb.style.opacity = "1";
+      this.thumb.style.transition = ""
+
+      if (this.current >= 0) {
+        top = (this.current / (this.totalLength - this.viewportLength)) * (height - thumbSize);
+      } else {
+        top = this.current / 2;
+      }
       this.thumb.style.top = `${minMax(top, -thumbSize + 10, height - 10)}px`;
+
+      this._stId = setTimeout(() => {
+        this.thumb.style.opacity = "0";
+        this.thumb.style.transition = "opacity ease 500ms"
+      }, 1000);
     }
   }
 }

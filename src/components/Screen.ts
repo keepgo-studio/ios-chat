@@ -45,6 +45,7 @@ class Screen extends LitElement {
         user-select: text;
       }
       .message:has(ios-chat-img) {
+        max-width: 65%;
         transition: ease ${DURATION}ms;
       }
       .message:has(ios-chat-img):active {
@@ -141,7 +142,7 @@ class Screen extends LitElement {
 
     this.addEventListener("pop", () => {
       this.renderPop();
-    })
+    });
   }
 
   renderContent(type: ChatMessageType, content: string) {
@@ -151,9 +152,15 @@ class Screen extends LitElement {
       case "audio":
         return html`<audio src=${content}></audio>`;
       case "img":
-        return html`<ios-chat-img .imgSrc=${content}></ios-chat-img>`;
+        return html`<ios-chat-img
+          .imgSrc=${content}
+          @loaded=${async () => {
+            await delay(200);
+            this.scrollToBottom();
+          }}
+        ></ios-chat-img>`;
       case "loading":
-        return html`<ios-chat-spinner></ios-chat-spinner>`
+        return html`<ios-chat-spinner></ios-chat-spinner>`;
     }
   }
 
@@ -175,18 +182,15 @@ class Screen extends LitElement {
 
     recentElem.style.transition = `ease ${DURATION}ms`;
     recentElem.style.transform = `translate(-50%, -50%) scale(0)`;
-    recentElem.style.opacity = '0';
+    recentElem.style.opacity = "0";
 
     const scrollTop = this.scrollContainer.scrollTop;
 
-    await moveTo(
-      this.scrollContainer,
-      {
-        from: scrollTop,
-        dest: scrollTop - recentElem.offsetHeight,
-        duration: DURATION,
-      }
-    );
+    await moveTo(this.scrollContainer, {
+      from: scrollTop,
+      dest: scrollTop - recentElem.offsetHeight,
+      duration: DURATION,
+    });
 
     await delay(1);
 
@@ -198,15 +202,13 @@ class Screen extends LitElement {
   async renderRecent() {
     const recent = this.data[this.data.length - 1];
     const recentElem = this.shadowRoot!.getElementById(recent.id)!;
-    const contentElem = recentElem!.querySelector("p, audio, ios-chat-img, ios-chat-spinner") as HTMLElement;
-    const width = contentElem.offsetWidth;
-    
+
     const cs = window.getComputedStyle(this.ul);
     const pb = pxToNumber(cs.paddingBottom);
     const recentCr = recentElem.getBoundingClientRect();
     const rootCr = this.getBoundingClientRect();
     const gap = rootCr.height - (recentCr.y - rootCr.y);
-    
+
     // chat-input padding top = 10px
     const top = 10 + minMax(gap, 0) - pb;
 
@@ -214,46 +216,55 @@ class Screen extends LitElement {
     recentElem.style.background = "var(--input-bg)";
     recentElem.style.zIndex = recent.role === "sender" ? "100" : "";
     recentElem.style.top = top + "px";
-    if (recent.type !== "loading") {
-      recentElem.style.width = `${this._inputWidth}px`;
+
+    if (recent.type === "text") {
+      recentElem.style.maxWidth = "none";
+
+      if (recent.role === "sender") {
+        recentElem.style.width = `${this._inputWidth}px`;
+      }
     }
-    recentElem.style.maxWidth = "none";
+
 
     await delay(1);
 
-    recentElem.style.transition = 'width ease 200ms, background ease 500ms, ease 300ms';
-    recentElem.style.background = recent.role === "sender" ? "var(--blue)" : "var(--dark-gray)";
+    recentElem.style.transition =
+      "width ease 200ms, background ease 500ms, ease 300ms";
+    recentElem.style.background =
+      recent.role === "sender" ? "var(--blue)" : "var(--dark-gray)";
 
     const containerHeight = this.scrollContainer.offsetHeight;
     const containerScrollHeight = this.scrollContainer.scrollHeight;
     const scrollTop = this.scrollContainer.scrollTop;
-    const ulWidth = pxToNumber(cs.width) - pxToNumber(cs.paddingLeft) - pxToNumber(cs.paddingRight);
+    const ulWidth =
+      pxToNumber(cs.width) -
+      pxToNumber(cs.paddingLeft) -
+      pxToNumber(cs.paddingRight);
     let scrollDest = containerScrollHeight - containerHeight;
+
+    const contentElem = recentElem!.querySelector(
+      "p, audio, ios-chat-img, ios-chat-spinner"
+    ) as HTMLElement;
+    const width = contentElem.offsetWidth;
 
     if (width + 1 > ulWidth * 0.7) {
       recentElem.style.width = `${ulWidth * 0.7}px`;
       scrollDest += recentElem.offsetHeight * 0.3;
-    } else {
+    } else if (recent.type === "text") {
       recentElem.style.width = `${width + 1}px`;
     }
 
-    moveTo(
-      this.scrollContainer,
-      {
-        from: scrollTop,
-        dest: scrollDest,
-        duration: DURATION,
-      }
-    ),
-    moveTo(
-      recentElem,
-      {
+    moveTo(this.scrollContainer, {
+      from: scrollTop,
+      dest: scrollDest,
+      duration: DURATION,
+    }),
+      moveTo(recentElem, {
         from: top,
         dest: 0,
         duration: DURATION / 2,
         styleAttr: "top"
-      }
-    );
+      });
 
     await delay(300);
 
@@ -275,7 +286,9 @@ class Screen extends LitElement {
     }
   }
 
-  protected override updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+  protected override updated(
+    _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
     this.renderList();
 
     if (_changedProperties.has("data") && this._inputWidth) {
@@ -286,32 +299,33 @@ class Screen extends LitElement {
   scrollingHandler(e: ScrollingEvent) {
     const { y, maxHeight } = e.detail;
 
-    this.scrollbar.setAttribute("viewportLength", this.scrollContainer.offsetHeight.toString());
+    this.scrollbar.setAttribute(
+      "viewportLength",
+      this.scrollContainer.offsetHeight.toString()
+    );
     this.scrollbar.setAttribute("totalLength", maxHeight.toString());
     this.scrollbar.setAttribute("current", y.toString());
   }
 
-  renderImage(focus: boolean) {
-    if (focus) {
-
-      return;
-    }
-
-
-  }
-
   clickHandler(e: Event) {
-    const tag = (e.target as HTMLElement);
+    const target = (e.currentTarget as HTMLElement);
+    const img = target.querySelector("ios-chat-img");
 
-    if (tag.tagName === "img") {
-      e.stopPropagation();
+    if (img && img.getAttribute("success") !== null) {
+      cancelMoving(this.scrollContainer);
+
+      this.scrollContainer.scrollTo({
+        left: 0,
+        top: target.offsetTop,
+        behavior: "smooth"
+      });
     }
   }
 
   protected override render() {
     return html`
       <ios-chat-scroll .startAt=${"bottom"} @scrolling=${this.scrollingHandler}>
-        <ul @click=${this.clickHandler}>
+        <ul>
           ${repeat(
             this.data,
             (msg) => msg.id,
@@ -319,6 +333,7 @@ class Screen extends LitElement {
               <li
                 id=${msg.id}
                 class="message ${msg.role === "receiver" ? "answer" : ""}"
+                @click=${this.clickHandler}
               >
                 ${this.renderContent(msg.type, msg.content)}
                 <div class="tail"></div>
@@ -327,7 +342,7 @@ class Screen extends LitElement {
           )}
         </ul>
       </ios-chat-scroll>
-      
+
       <ios-chat-scrollbar></ios-chat-scrollbar>
     `;
   }

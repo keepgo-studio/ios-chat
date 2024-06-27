@@ -43,7 +43,8 @@ export function roundToThirdDecimal(num: number) {
 
 const Ease = {
   easeOutExpo: (x: number) => (x === 1 ? 1 : 1 - Math.pow(2, -10 * x)),
-  easeInOutQuad: (x: number) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2
+  easeInOutQuad: (x: number) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2,
+  easeOutCirc: (x: number) => Math.sqrt(1 - Math.pow(x - 1, 2))
 }
 
 const movingMap = new WeakMap();
@@ -58,7 +59,8 @@ export async function moveTo(
     from: number;
     dest: number;
     duration: number;
-    styleAttr?: "scroll" | "top" | "padding-top" | "padding-bottom";
+    // callback: (dis: number) => void;
+    styleAttr?: "scroll" | "paddingBottom" | "paddingTop" | "top";
     ease?: keyof typeof Ease;
   }
 ) {
@@ -73,15 +75,13 @@ export async function moveTo(
             time = Math.min(1, (currentTime - start) / duration),
             easedT = Ease[ease](time),
             dis = roundToThirdDecimal(easedT * (dest - from) + from);
-  
-      if (styleAttr === "scroll") {
-        elem.scrollTop = dis;
-      } else if (styleAttr === "top") {
-        elem.style.top = `${dis}px`;
-      } else if (styleAttr === "padding-top") {
-        elem.style.paddingTop = `${dis}px`;
-      } else if (styleAttr === "padding-bottom") {
-        elem.style.paddingBottom = `${dis}px`;
+
+      switch (styleAttr) {
+        case "scroll":
+          elem.scrollTop = dis;
+          break;
+        case "paddingBottom": case "paddingTop": case "top":
+          elem.style[styleAttr] = `${dis}px`;
       }
   
       if (time < 1) requestAnimationFrame(scroll);

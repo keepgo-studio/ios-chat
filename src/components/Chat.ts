@@ -2,10 +2,10 @@ import { globalStyles } from "@/lib/core";
 import ChatManager from "@/lib/service";
 import { LitElement, css, html } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
+import { isOnlySpaces } from "@/lib/utils";
 
 import plusSvg from "../assets/plus.svg";
 import arrowSvg from "../assets/arrow.up.circle.fill.svg";
-import { isOnlySpaces } from "@/lib/utils";
 
 @customElement("ios-chat")
 class Chat extends LitElement {

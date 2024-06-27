@@ -15,6 +15,7 @@ type Listener = {
 export default class ChatManager {
   static rooms: { [roomId: string]: ChatRoom } = {};
   static listeners: { [roomId: string]: Listener[] } = {};
+  static blocked = false;
 
   static currentRoomId: string | null = null;
 
