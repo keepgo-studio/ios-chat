@@ -53,6 +53,13 @@ declare global {
     };
   }
 
+
+  interface InputNonText extends CustomEvent {
+    detail: {
+      type: ImgType | AudioType;
+      content: string;
+    }
+  }
   interface HTMLElementEventMap {
     "send-message": SendMessageEvent;
     "answer-loading-start": CustomEvent;
@@ -61,6 +68,7 @@ declare global {
     "input-active": InputActiveEvent;
     "scrolling": ScrollingEvent;
     "loaded": CustomEvent;
+    "input-non-text": InputNonText;
   }
 }
 

@@ -1,18 +1,22 @@
 import { LitElement, PropertyValueMap, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { delay, minMax } from "@/lib/utils";
 
 import nullSvg from "../assets/questionmark.folder.fill.svg";
-import { delay, minMax } from "@/lib/utils";
+import { globalStyles } from "@/lib/core";
 
 const DURATION = 600;
 @customElement("ios-chat-img")
 class CustomImage extends LitElement {
-  static override styles = css`
+  static override styles = [
+    globalStyles,
+    css`
     :host {
       display: block;
       width: 100%;
     }
     img {
+      display: block;
       border-radius: var(--border-radius);
       width: 100%;
       height: 100%;
@@ -44,7 +48,8 @@ class CustomImage extends LitElement {
     .null ios-chat-svg {
       width: var(--font-size);
     }
-  `;
+  `
+  ];
 
   private _width = 0;
   private _height = 0;

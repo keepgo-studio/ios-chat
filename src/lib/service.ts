@@ -72,6 +72,15 @@ export default class ChatManager {
     this.rooms[roomId].messages.pop();
   }
 
+  static sendNonTextInput(roomId: string, info: {
+    type: ImgType | AudioType;
+    content: string;
+  }) {
+    this.rooms[roomId].ref.dispatchEvent(new CustomEvent("input-non-text", {
+      detail: info
+    }))
+  }
+
   static listen(roomId: string, callback: ListenerCallback) {
     const listenerId = uuidv4();
 

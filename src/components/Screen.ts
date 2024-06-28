@@ -30,7 +30,7 @@ class Screen extends LitElement {
       .message {
         border-radius: var(--border-radius);
         position: relative;
-        color: white;
+        color: #fff;
         width: fit-content;
         word-break: break-all;
         align-self: flex-end;
@@ -61,6 +61,10 @@ class Screen extends LitElement {
         padding: 0.2em 1em;
       }
 
+      .message > *:not(.tail) {
+        z-index: 1;
+        position: relative;
+      }
       .message.with-tail {
         margin-bottom: 6px;
       }
@@ -91,13 +95,14 @@ class Screen extends LitElement {
         right: -10px;
         width: 10px;
         height: 20px;
-        background: var(--dark-theme-bg);
+        background: var(--theme-bg);
         border-bottom-left-radius: 10px;
       }
 
       .message.answer {
-        background: var(--dark-gray);
+        background: var(--message-color);
         align-self: flex-start;
+        color: var(--theme-color);
       }
       .message.answer .tail::before {
         background: inherit;
@@ -106,7 +111,7 @@ class Screen extends LitElement {
         border-bottom-right-radius: 15px;
       }
       .message.answer .tail::after {
-        background: var(--dark-theme-bg);
+        background: var(--theme-bg);
         left: -10px;
         border-radius: 0;
         border-bottom-right-radius: 10px;
@@ -231,7 +236,7 @@ class Screen extends LitElement {
     recentElem.style.transition =
       "width ease 200ms, background ease 500ms, ease 300ms";
     recentElem.style.background =
-      recent.role === "sender" ? "var(--blue)" : "var(--dark-gray)";
+      recent.role === "sender" ? "var(--blue)" : "var(--message-color)";
 
     const containerHeight = this.scrollContainer.offsetHeight;
     const containerScrollHeight = this.scrollContainer.scrollHeight;
