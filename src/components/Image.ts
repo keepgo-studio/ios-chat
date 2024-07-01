@@ -5,7 +5,9 @@ import { delay, minMax } from "@/lib/utils";
 import nullSvg from "../assets/questionmark.folder.fill.svg";
 import { globalStyles } from "@/lib/core";
 
+// [ ] image average rgb color, canvas tag needed
 const DURATION = 600;
+
 @customElement("ios-chat-img")
 class CustomImage extends LitElement {
   static override styles = [

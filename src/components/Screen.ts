@@ -155,7 +155,7 @@ class Screen extends LitElement {
       case "text":
         return html`<p>${content}</p>`;
       case "audio":
-        return html`<audio src=${content}></audio>`;
+        return html`<ios-chat-audio .src=${content}></ios-chat-audio>`;
       case "img":
         return html`<ios-chat-img
           .imgSrc=${content}

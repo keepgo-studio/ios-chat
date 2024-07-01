@@ -7,5 +7,7 @@ import "./components/Chat";
 import "./components/ChatList";
 import "./components/Image";
 import "./components/Detail";
+import "./components/Audio";
+import "./components/Wave";
 
 export * from "./lib/handler";

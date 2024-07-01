@@ -1,10 +1,12 @@
 import { LitElement, css, html } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import { globalStyles } from "@/lib/core";
+import ChatManager from "@/lib/service";
 
 import PhotoSvg from "../assets/photos.svg";
 import AudioSvg from "../assets/waveform.circle.fill.svg";
-import ChatManager from "@/lib/service";
+import RecordSvg from "../assets/mic.circle.fill.svg";
+import { pxToNumber } from "@/lib/utils";
 
 @customElement("ios-chat-detail")
 class Detail extends LitElement {
@@ -24,15 +26,15 @@ class Detail extends LitElement {
       }
       section.open {
         z-index: 999;
-        background-color: rgba(0, 0, 0, 0.6);
+        background-color: rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(6px);
       }
 
       ul {
+        width: 100%;
         position: absolute;
-        bottom: 0;
+        bottom: 32px;
         left: 0;
-        padding: 32px 0;
         display: flex;
         justify-content: flex-end;
         flex-direction: column;
@@ -40,7 +42,7 @@ class Detail extends LitElement {
         gap: 0.5em;
         transition: var(--ease-out-back) 600ms;
         filter: blur(40px);
-        transform: translate(-30%, 36%) scale(0);
+        transform: translate(-40%, 56%) scale(0);
       }
       .open ul {
         filter: blur(0px);
@@ -82,11 +84,15 @@ class Detail extends LitElement {
   @property({ type: Boolean })
   open = false;
 
+  @query("ul")
+  ulElem!: HTMLElement;
+
   override render() {
     return html`
       <section class=${this.open ? "open" : ""}>
-          <ul>
-            <li @click=${(e: Event) => e.stopPropagation()}>
+        <ul @click=${this.clickHandler}>
+          <ios-chat-scroll>
+            <li>
               <label for="image">
                 <ios-chat-svg .data=${PhotoSvg}></ios-chat-svg>
                 <p>Photos</p>
@@ -98,23 +104,39 @@ class Detail extends LitElement {
                 style="display: none;"
                 @change=${(e: InputEvent) => {
                   const target = e.target as HTMLInputElement;
-                  
+
                   if (!this.roomId || !target.files) return;
-                  
+
                   const file = target.files[0];
-                  
+
                   ChatManager.sendNonTextInput(this.roomId, {
                     content: URL.createObjectURL(file),
-                    type: "img"
+                    type: "img",
                   });
 
                   this.dispatchEvent(new Event("click"));
 
-                  target.value = '';
+                  target.value = "";
                 }}
               />
             </li>
-            <li @click=${(e: Event) => e.stopPropagation()}>
+
+            <li>
+              <label for="record" @click=${() => {
+                if (!this.roomId) return;
+
+                ChatManager.sendNonTextInput(this.roomId, {
+                  content: "record",
+                  type: "audio",
+                });
+              }}>
+                <ios-chat-svg .data=${RecordSvg}></ios-chat-svg>
+                <p>Record</p>
+              </label>
+              <input id="record" style="display: none;"/>
+            </li>
+
+            <li>
               <label for="audio">
                 <ios-chat-svg .data=${AudioSvg}></ios-chat-svg>
                 <p>Audio</p>
@@ -124,18 +146,45 @@ class Detail extends LitElement {
                 id="audio"
                 accept="audio/*"
                 style="display: none;"
-                @chage=${(e: InputEvent) => {}}
+                @change=${(e: InputEvent) => {
+                  const target = e.target as HTMLInputElement;
+
+                  if (!this.roomId || !target.files) return;
+
+                  const file = target.files[0];
+
+                  ChatManager.sendNonTextInput(this.roomId, {
+                    content: URL.createObjectURL(file),
+                    type: "audio",
+                  });
+
+                  this.dispatchEvent(new Event("click"));
+
+                  target.value = "";
+                }}
               />
             </li>
-          </ul>
+          </ios-chat-scroll>
+        </ul>
       </section>
     `;
   }
 
+  clickHandler(e: Event) {
+    const inputTag = e.target as HTMLInputElement;
+
+    if (inputTag.tagName === "INPUT") return;
+
+    e.stopPropagation();
+  }
+
   override updated() {
-    if (this.open) {
-    } else {
-    }
+    if (!this.open) return;
+
+    const n = this.ulElem.querySelectorAll("li").length;
+    const cs = window.getComputedStyle(this.ulElem.querySelector("li")!);
+
+    this.ulElem.style.height = `${pxToNumber(cs.height) * n}px`;
   }
 }
 

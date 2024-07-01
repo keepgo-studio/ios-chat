@@ -2,6 +2,10 @@ import ChatManager, { type ListenerCallback, type SendInfo } from "./service";
 import { delay } from "./utils";
 import { DURATION } from "@/components/Screen";
 
+export async function initChat(roomId: string, messages: ChatMessage[]) {
+  ChatManager.rooms[roomId].messages = [...messages];
+}
+
 export async function sendChat(roomId: string, info: SendInfo) {
   if (ChatManager.blocked) return false;
 

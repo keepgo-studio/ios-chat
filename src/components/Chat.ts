@@ -17,6 +17,7 @@ class Chat extends LitElement {
         --theme-bg: #fff;
         --theme-color: #000;
         --message-color: #e9e9eb;
+        --chat-input-bg: rgba(255, 255, 255, 0.7);
         --font-size: 16px;
         --border-radius: 22px;
         --input-bg: rgba(10, 10, 10, 0.75);
@@ -27,14 +28,6 @@ class Chat extends LitElement {
         width: 100%;
         height: 100%;
         background-color: var(--theme-bg);
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :host {
-          --theme-bg: #000;
-          --theme-color: #fff;
-          --message-color: #26262a;
-        }
       }
 
       .root {
@@ -63,8 +56,20 @@ class Chat extends LitElement {
         align-items: flex-end;
         padding: 10px 16px;
         backdrop-filter: blur(12px);
-        background-color: rgba(0, 0, 0, 0.6);
+        background-color: var(--chat-input-bg);
         font-size: var(--font-size);
+      }
+      
+      ios-chat-audio {
+        display: none;
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 100;
+        height: 4.2em;
+        background-color: var(--chat-input-bg);
+        backdrop-filter: blur(12px);
       }
 
       .btn-container {
@@ -129,7 +134,7 @@ class Chat extends LitElement {
         color: var(--theme-color);
         outline: none;
         border: none;
-        background-color: var(--input-bg);
+        background-color: rgba(255, 255, 255, 0.9);
         caret-color: #1588fe;
         resize: none;
       }
@@ -146,7 +151,7 @@ class Chat extends LitElement {
 
       .textarea-wrapper {
         width: 100%;
-        box-shadow: inset 0 0 0 1px var(--message-color);
+        box-shadow: 0 0 0 2px var(--message-color);
         border-radius: var(--border-radius);
       }
       .textarea-wrapper .img-wrapper {
@@ -210,6 +215,19 @@ class Chat extends LitElement {
       .textarea-container ios-chat-svg:active {
         filter: brightness(0.8);
       }
+
+      @media (prefers-color-scheme: dark) {
+        :host {
+          --theme-bg: #000;
+          --theme-color: #fff;
+          --message-color: #26262a;
+          --chat-input-bg: rgba(0, 0, 0, 0.6);
+        }
+
+        textarea {
+          background-color: var(--input-bg);
+        }
+      }
     `,
   ];
 
@@ -244,6 +262,9 @@ class Chat extends LitElement {
 
   @query(".copy")
   copyBtn!: HTMLButtonElement;
+
+  @query("ios-chat-audio")
+  audioElem!: HTMLElement;
 
   constructor() {
     super();
@@ -307,7 +328,9 @@ class Chat extends LitElement {
         this.textAreaWrapper.prepend(imgWrapper);
         this._msgQueue.push(e.detail);
       } else if (type ==="audio") {
-
+        this.audioElem.style.display = "block";
+        this.audioElem.setAttribute("src", content);
+        this.chatInput.style.display = "none";
       }
     });
   }
@@ -323,6 +346,8 @@ class Chat extends LitElement {
           @click=${() => this._animatePlusBtn = false}
         ></ios-chat-detail>
 
+        <ios-chat-audio></ios-chat-audio>
+        
         <section class="chat-input">
           <div class="btn-container" @click=${(e: Event) => this._animatePlusBtn = true}>
             <button>
