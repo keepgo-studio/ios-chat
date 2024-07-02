@@ -60,6 +60,7 @@ declare global {
       content: string;
     }
   }
+
   interface HTMLElementEventMap {
     "send-message": SendMessageEvent;
     "answer-loading-start": CustomEvent;
@@ -69,6 +70,8 @@ declare global {
     "scrolling": ScrollingEvent;
     "loaded": CustomEvent;
     "input-non-text": InputNonText;
+    "record-instance": CustomEvent;
+    "wave-rawdata": CustomEvent;
   }
 }
 

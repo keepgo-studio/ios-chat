@@ -15,7 +15,7 @@ class Spinner extends LitElement {
 div.spinner div {
   width: 6%;
   height: 16%;
-  background: #FFF;
+  background: var(--theme-color);
   position: absolute;
   left: 49%;
   top: 43%;

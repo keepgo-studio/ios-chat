@@ -42,7 +42,7 @@ class Detail extends LitElement {
         gap: 0.5em;
         transition: var(--ease-out-back) 600ms;
         filter: blur(40px);
-        transform: translate(-40%, 56%) scale(0);
+        transform: translate(calc(-50% + 16px), 50%) scale(0);
       }
       .open ul {
         filter: blur(0px);
