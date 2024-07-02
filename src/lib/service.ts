@@ -94,3 +94,19 @@ export default class ChatManager {
     return this.rooms[roomId].messages;
   }
 }
+
+export class AudioManager {
+  static players: Map<HTMLAudioElement, number> = new Map();
+
+  static append(elem: HTMLAudioElement) {
+    this.players.set(elem, 0);
+  }
+
+  static play(elem: HTMLAudioElement) {
+    this.players.forEach((_, _elem) => {
+      _elem.pause();
+    });
+
+    elem.play();
+  }
+}

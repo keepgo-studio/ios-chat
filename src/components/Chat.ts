@@ -19,11 +19,37 @@ class Chat extends LitElement {
         --message-color: #e9e9eb;
         --chat-input-bg: rgba(255, 255, 255, 0.7);
         --font-size: 16px;
-        --border-radius: 22px;
+        --border-radius: 20px;
         --input-bg: rgba(10, 10, 10, 0.75);
+        --red: rgba(255, 69, 58);
         --blue: #39a7fc;
         --ease-out-back: cubic-bezier(0.34, 1.36, 0.44, 1);
+        --textarea: rgba(255, 255, 255, 0.9);
+        --scrollbar: #a5a5a5;
+        --wave-fill: #000;
+        --wave-blank: rgba(0, 0, 0, 0.3);
+        --audio: rgba(200, 200, 200, 0.1);
+        --audio-button: #edeaee;
+        --audio-icon: rgba(0, 0, 0, 0.5);
+        --audio-loading: rgba(222, 222, 222, 0.7);
+      }
 
+      :host-context(.dark) {
+        --theme-bg: #000;
+        --theme-color: #fff;
+        --message-color: #26262a;
+        --chat-input-bg: rgba(0, 0, 0, 0.6);
+        --textarea: rgba(0, 0, 0, 0.5);
+        --scrollbar: rgb(116 116 116);
+        --wave-fill: #fff;
+        --wave-blank: rgba(255, 255, 255, 0.5);
+        --audio: rgba(255, 255, 255, 0.1);
+        --audio-button: #313133;
+        --audio-icon: rgba(255, 255, 255, 0.5);
+        --audio-loading: rgba(0, 0, 0, 0.7);
+      }
+
+      :host {
         display: block;
         width: 100%;
         height: 100%;
@@ -134,7 +160,7 @@ class Chat extends LitElement {
         color: var(--theme-color);
         outline: none;
         border: none;
-        background-color: rgba(255, 255, 255, 0.9);
+        background-color: var(--textarea);
         caret-color: #1588fe;
         resize: none;
       }
@@ -214,19 +240,6 @@ class Chat extends LitElement {
       }
       .textarea-container ios-chat-svg:active {
         filter: brightness(0.8);
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :host {
-          --theme-bg: #000;
-          --theme-color: #fff;
-          --message-color: #26262a;
-          --chat-input-bg: rgba(0, 0, 0, 0.6);
-        }
-
-        textarea {
-          background-color: var(--input-bg);
-        }
       }
     `,
   ];
@@ -346,7 +359,18 @@ class Chat extends LitElement {
           @click=${() => this._animatePlusBtn = false}
         ></ios-chat-detail>
 
-        <ios-chat-audio></ios-chat-audio>
+        <ios-chat-audio @audio-end=${(e: CustomEvent) => {
+          this.audioElem.setAttribute("src", "");
+          this.audioElem.style.display = "none";
+          this.chatInput.style.display = "";
+
+          if (e.detail) {
+            ChatManager.sendMessage("sender", this._id, {
+              type: "audio",
+              content: e.detail
+            });
+          }
+        }}></ios-chat-audio>
         
         <section class="chat-input">
           <div class="btn-container" @click=${(e: Event) => this._animatePlusBtn = true}>

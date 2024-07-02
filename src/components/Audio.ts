@@ -1,16 +1,20 @@
 import { globalStyles } from "@/lib/core";
 import { LitElement, PropertyValueMap, css, html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { debounce, delay, pxToNumber } from "@/lib/utils";
+import { debounce, delay, pxToNumber, urlToBlob } from "@/lib/utils";
+import { AudioManager } from "@/lib/service";
 
 import closeSvg from "../assets/multiply.svg";
 import playSvg from "../assets/play.fill.svg";
+import pauseSvg from "../assets/pause.fill.svg";
 import stopSvg from "../assets/stop.fill.svg";
 import sendSvg from "../assets/arrow.up.circle.fill.svg";
 
 
 export const FFT_SIZE = 128;
+const CHUNK_TRACK_TIME = 100;
 export class RecordAudio {
+  initialized = false;
   ctx: AudioContext;
   analyser: AnalyserNode;
   dataArray: Uint8Array;
@@ -18,6 +22,7 @@ export class RecordAudio {
   duration = 0;
   prevTime = 0;
   trackLifeCycle = false;
+  url = "";
 
   mediaRecorder?: MediaRecorder;
 
@@ -43,7 +48,6 @@ export class RecordAudio {
         const source = this.ctx.createMediaStreamSource(stream);
         source.connect(this.analyser);
 
-        let url = "";
         this.mediaRecorder = new MediaRecorder(stream);
 
         this.mediaRecorder.ondataavailable = (e) => {
@@ -53,27 +57,27 @@ export class RecordAudio {
         };
 
         this.mediaRecorder.onstart = () => {
+          this.initialized = true;
           this.trackLifeCycle = true;
-          this.prevTime = Date.now();
           requestAnimationFrame(this.trackTime.bind(this));
 
           if (start) start();
         }
         
         this.mediaRecorder.onpause = () => {
-          this.trackLifeCycle = false;
-
           if (!pause) return;
 
           const blob = new Blob(this.recordedChunks, {
             type: "audio/webm; codecs=opus",
           });
-          url = URL.createObjectURL(blob);
-          pause(url);
+          this.url = URL.createObjectURL(blob);
+          this.trackLifeCycle = false;
+
+          pause(this.url);
         }
 
         this.mediaRecorder.onresume = () => {
-          URL.revokeObjectURL(url);
+          URL.revokeObjectURL(this.url);
 
           this.trackLifeCycle = true;
           this.prevTime = Date.now();
@@ -83,18 +87,18 @@ export class RecordAudio {
         }
 
         this.mediaRecorder.onstop = () => {
-          this.trackLifeCycle = false;
-
           if (!end) return;
 
           const blob = new Blob(this.recordedChunks, {
             type: "audio/webm; codecs=opus",
           });
-          url = URL.createObjectURL(blob);
-          end(url);
+          this.url = URL.createObjectURL(blob);
+          this.trackLifeCycle = false;
+          end(this.url);
         };
-
-        this.mediaRecorder.start(100);
+        
+        this.prevTime = Date.now();
+        this.mediaRecorder.start(CHUNK_TRACK_TIME);
       })
       .catch((err) => {
         console.error(err);
@@ -128,11 +132,6 @@ export class RecordAudio {
   }
 }
 
-async function urlToBlob(blobUrl: string) {
-  const res = await fetch(blobUrl);
-  return await res.blob();
-}
-
 @customElement("ios-chat-audio")
 class Audio extends LitElement {
   static override styles = [
@@ -158,12 +157,12 @@ class Audio extends LitElement {
       }
 
       button {
-        background-color: #313133;
+        background-color: var(--audio-button);
         border: none;
         width: 2em;
         aspect-ratio: 1 / 1;
         border-radius: 50%;
-        fill: rgba(255, 255, 255, 0.5);
+        fill: var(--audio-icon);
         cursor: pointer;
         transition: ease 500ms, filter 0ms;
         position: relative;
@@ -181,6 +180,15 @@ class Audio extends LitElement {
         width: 0.6em;
       }
 
+      button.play .pause-icon {
+        display: none;
+      }
+      button.playing .pause-icon {
+        display: block;
+      }
+      button.playing .play-icon {
+        display: none;
+      }
       button.cancel {
         width: 1.8em;
       }
@@ -203,11 +211,11 @@ class Audio extends LitElement {
       }
 
       .audio-wrapper {
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: var(--audio);
         border-radius: 999px;
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
         height: 100%;
         padding: 0 0.8em;
         font-weight: 300;
@@ -217,10 +225,12 @@ class Audio extends LitElement {
 
       .time {
         border-radius: 999px;
-        background-color: rgba(0, 0, 0, 0.1);
+        background-color: var(--chat-input-bg);
         font-size: 12px;
         padding: 4px 6px;
         cursor: pointer;
+        text-align: center;
+        width: 5em;
       }
       .time:active {
         filter: brightness(0.8);
@@ -252,7 +262,8 @@ class Audio extends LitElement {
         align-items: center;
         justify-content: center;
         border-radius: 999px;
-        background-color: rgba(0, 0, 0, 0.7);
+        background-color: var(--audio-loading);
+        backdrop-filter: blur(10px);
       }
       .loading ios-chat-spinner {
         width: 2em;
@@ -289,9 +300,13 @@ class Audio extends LitElement {
   ];
 
   _record?: RecordAudio;
+  _lifeCycle = false;
 
   @state()
   _mode: "record" | "file" = "record";
+
+  @state()
+  _playing = false;
 
   @state()
   _loading = false;
@@ -317,21 +332,22 @@ class Audio extends LitElement {
 
       <section>
         <div class="cancel-container">
-          <button class="cancel">
+          <button class="cancel" @click=${() => this.endAudioTag()}>
             <ios-chat-svg .data=${closeSvg}></ios-chat-svg>
           </button>
         </div>
 
         <div class="audio-container">
           <div class="audio-wrapper">
-            <button class="play" @click=${() => {
+            <button class="play ${this._playing ? "playing" : ""}" @click=${() => {
               if (this.audio.paused) {
-                this.audio.play();
+                AudioManager.play(this.audio);
               } else {
                 this.audio.pause();
               }
             }}>
-              <ios-chat-svg .data=${playSvg}></ios-chat-svg>
+              <ios-chat-svg class="play-icon" .data=${playSvg}></ios-chat-svg>
+              <ios-chat-svg class="pause-icon" .data=${pauseSvg}></ios-chat-svg>
             </button>
 
             <ios-chat-wave
@@ -341,13 +357,8 @@ class Audio extends LitElement {
             <div class="time" @click=${() => {
               if (!this.audio.paused) this.audio.pause();
 
-              switch(this._record?.mediaRecorder?.state) {
-                case "inactive":
-                  this._record?.mediaRecorder?.start(100);
-                  break;
-                case "paused":
-                  this._record?.mediaRecorder?.resume();
-                  break;
+              if (this._record?.mediaRecorder?.state === "paused") {
+                this._record?.mediaRecorder?.resume();
               }
             }}></div>
 
@@ -356,13 +367,16 @@ class Audio extends LitElement {
 
               switch(this._mode) {
                 case "record":
+                  if (!this._record?.initialized) return;
+
                   if (this._record?.mediaRecorder?.state === "recording") {
                     this._record?.mediaRecorder?.pause();
                   }
                   break;
                 case "file":
                   this._record?.mediaRecorder?.stop();
-                  
+                  this.endAudioTag(this.src);
+                  break;
               }
             }}>
               <ios-chat-svg class="send-icon" .data=${sendSvg}></ios-chat-svg>
@@ -378,6 +392,17 @@ class Audio extends LitElement {
         </div>
       </section>
     `;
+  }
+
+  endAudioTag(url?: string) {
+    delete this._record;
+    
+    this._playing = false;
+    
+    this.dispatchEvent(new CustomEvent("audio-end", {
+      detail: url
+    }));
+    this.wave.dispatchEvent(new CustomEvent("clear-wave"));
   }
 
   syncCanvasSize() {
@@ -413,18 +438,24 @@ class Audio extends LitElement {
   }
 
   async drawTime() {
+    if (!this._lifeCycle) return;
+
     let t = 0;
     const isPlaying = !this.audio.paused;
     
     if (this._record) {
-      t = this._record.duration;
+      t = isPlaying ? this.audio.currentTime : this._record.duration;
     } else if (this.audio.duration) {
       t = isPlaying ? this.audio.currentTime : this.audio.duration;
+    } else {
+      t = 0;
     }
 
-    const sec = Math.floor(t % 60);
-    const min = Math.floor((t / 60)) % 60;
-    const hour = Math.floor(t / 3600);
+    t = Math.round(t);
+
+    const sec = t % 60;
+    const min = Math.round((t / 60)) % 60;
+    const hour = Math.round(t / 3600);
     
     const padZero = (pad: number, n: number) => {
       const r = [...Array(pad)].map(() => '0').join('');
@@ -434,11 +465,13 @@ class Audio extends LitElement {
     let str = `${padZero(2, min)}:${padZero(2, sec)}`;
     const isRecording = this._mode === "record";
 
-    if (hour) str = `${hour}:` + str;
+    if (hour) {
+      str = `${padZero(2, hour)}:` + str;
+    }
+
     if (isRecording) str = "+" + str;
 
     this.timeElem.textContent = str;
-    this.timeElem.style.width = str.length + "em";
 
     await delay(100);
 
@@ -448,12 +481,21 @@ class Audio extends LitElement {
   resizeHandler = debounce(() => this.syncCanvasSize(), 500);
 
   override disconnectedCallback(): void {
-    console.log("detach ",this.tagName);
     window.removeEventListener("resize", this.resizeHandler);  
   }
 
   override firstUpdated() {
     window.addEventListener("resize", this.resizeHandler);
+
+    const io = new IntersectionObserver((entries) => {
+      this._lifeCycle = entries[0].isIntersecting;
+
+      if (this._lifeCycle) {
+        requestAnimationFrame(this.drawTime.bind(this));
+      }
+    })
+
+    io.observe(this);
 
     requestAnimationFrame(this.drawTime.bind(this));
 
@@ -464,23 +506,38 @@ class Audio extends LitElement {
       const ratio = Math.max(0, (e.clientX - cs.x) / cs.width);
 
       const duration = (this._record ? this._record.duration : this.audio.duration);
-      this.audio.currentTime = Math.round(duration * ratio);
+      this.audio.currentTime = duration * ratio;
     });
 
-    this.audio.volume = 0.3;
+    this.audio.addEventListener("play", () => {
+      this._playing = true;
+    });
+    this.audio.addEventListener("pause", () => {
+      this._playing = false;
+    });
+
+    this.audio.volume = 0.2;
+
+    AudioManager.append(this.audio);
   }
 
   protected override updated(
     _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
-    if (_changedProperties.has("_loading")) return;
+    if (_changedProperties.has("_loading") || _changedProperties.has("_playing")) return;
 
     const validSrc = this.src === "record" || this.src.startsWith("blob:");
 
-    if (!validSrc) return;
+    // turn off audio tag
+    if (!validSrc) {
+      this.root.style.height = "";
+      this.root.style.width = "";
+      this.root.style.opacity = "";
+      return;
+    }
 
-    if (_changedProperties.has("src") && validSrc) {
-      delay(1).then(() => {
+    if (_changedProperties.has("src")) {
+      delay(100).then(() => {
         this.root.style.height = "100%";
         this.root.style.width = "100%";
         this.root.style.opacity = "1";
@@ -510,8 +567,7 @@ class Audio extends LitElement {
           this.src = url;
           this._mode = "file";
         },
-        end: (url) => {
-          this.src = url;
+        end: () => {
           this._mode = "file";
         }
       });

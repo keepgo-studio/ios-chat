@@ -9,5 +9,6 @@ import "./components/Image";
 import "./components/Detail";
 import "./components/Audio";
 import "./components/Wave";
+import "./components/AudioMessage";
 
 export * from "./lib/handler";

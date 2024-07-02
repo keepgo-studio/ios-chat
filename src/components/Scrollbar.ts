@@ -28,7 +28,7 @@ class Scrollbar extends LitElement {
     .thumb {
       position: relative;
       width: 100%;
-      background-color: rgb(116 116 116);
+      background-color: var(--scrollbar);
       border-radius: 999px;
       transition: ease 100ms;
     }

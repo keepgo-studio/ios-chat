@@ -37,12 +37,19 @@ class Screen extends LitElement {
         background: var(--blue);
         max-width: 70%;
       }
+      .message.error {
+        background-color: var(--red) !important;
+        cursor: not-allowed;
+      }
       p {
         padding: 0.6em 1em;
         line-height: 1.2em;
         width: fit-content;
         white-space: pre-line;
         user-select: text;
+      }
+      .message:has(ios-chat-audio-message) {
+        width: 100%;
       }
       .message:has(ios-chat-img) {
         max-width: 65%;
@@ -155,15 +162,9 @@ class Screen extends LitElement {
       case "text":
         return html`<p>${content}</p>`;
       case "audio":
-        return html`<ios-chat-audio .src=${content}></ios-chat-audio>`;
+        return html`<ios-chat-audio-message .src=${content}></ios-chat-audio-message>`;
       case "img":
-        return html`<ios-chat-img
-          .imgSrc=${content}
-          @loaded=${async () => {
-            await delay(200);
-            this.scrollToBottom();
-          }}
-        ></ios-chat-img>`;
+        return html`<ios-chat-img .imgSrc=${content}></ios-chat-img>`;
       case "loading":
         return html`<ios-chat-spinner></ios-chat-spinner>`;
     }
@@ -218,7 +219,7 @@ class Screen extends LitElement {
     const top = 10 + minMax(gap, 0) - pb;
 
     // init style
-    recentElem.style.background = "var(--input-bg)";
+    recentElem.style.background = "var(--textarea)";
     recentElem.style.zIndex = recent.role === "sender" ? "100" : "";
     recentElem.style.top = top + "px";
 
@@ -228,13 +229,17 @@ class Screen extends LitElement {
       if (recent.role === "sender") {
         recentElem.style.width = `${this._inputWidth}px`;
       }
-    }
+    } else if (recent.type === "audio") {
+      recentElem.style.maxWidth = "none";
 
+      if (recent.role === "sender") {
+        recentElem.style.width = `${this._inputWidth}px`;
+      }
+    }
 
     await delay(1);
 
-    recentElem.style.transition =
-      "width ease 200ms, background ease 500ms, ease 300ms";
+    recentElem.style.transition = "width ease 300ms, background ease 500ms";
     recentElem.style.background =
       recent.role === "sender" ? "var(--blue)" : "var(--message-color)";
 
@@ -248,15 +253,15 @@ class Screen extends LitElement {
     let scrollDest = containerScrollHeight - containerHeight;
 
     const contentElem = recentElem!.querySelector(
-      "p, audio, ios-chat-img, ios-chat-spinner"
+      "p, ios-chat-img, ios-chat-spinner, ios-chat-audio-message"
     ) as HTMLElement;
-    const width = contentElem.offsetWidth;
+    const contentWidth = contentElem.offsetWidth;
 
-    if (width + 1 > ulWidth * 0.7) {
+    if (contentWidth + 1 > ulWidth * 0.7 || recent.type === "audio") {
       recentElem.style.width = `${ulWidth * 0.7}px`;
       scrollDest += recentElem.offsetHeight * 0.3;
     } else if (recent.type === "text") {
-      recentElem.style.width = `${width + 1}px`;
+      recentElem.style.width = `${contentWidth + 1}px`;
     }
 
     moveTo(this.scrollContainer, {
@@ -272,7 +277,9 @@ class Screen extends LitElement {
       });
 
     await delay(300);
-
+    
+    recentElem.style.maxWidth = "";
+    recentElem.style.width = "";
     recentElem.style.zIndex = "0";
   }
 
@@ -339,6 +346,18 @@ class Screen extends LitElement {
                 id=${msg.id}
                 class="message ${msg.role === "receiver" ? "answer" : ""}"
                 @click=${this.clickHandler}
+                @loaded=${async (e: CustomEvent) => {
+                  await delay(200);
+                  this.scrollToBottom();
+
+                  const li = this.shadowRoot?.getElementById(msg.id);
+                  
+                  if (e.detail) {
+                    li?.classList.remove("error");
+                  } else {
+                    li?.classList.add("error");
+                  }
+                }}
               >
                 ${this.renderContent(msg.type, msg.content)}
                 <div class="tail"></div>

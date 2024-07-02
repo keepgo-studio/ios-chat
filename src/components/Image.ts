@@ -1,11 +1,10 @@
 import { LitElement, PropertyValueMap, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { delay, minMax } from "@/lib/utils";
-
-import nullSvg from "../assets/questionmark.folder.fill.svg";
 import { globalStyles } from "@/lib/core";
 
-// [ ] image average rgb color, canvas tag needed
+import nullSvg from "../assets/questionmark.folder.fill.svg";
+
 const DURATION = 600;
 
 @customElement("ios-chat-img")
@@ -185,7 +184,6 @@ class CustomImage extends LitElement {
       frame.style.width = `${cr.width}px`;
       frame.style.height = `${cr.height}px`;
 
-      focusContainer.style.zIndex = "0";
       focusContainer.style.background = "rgba(0, 0, 0, 0)";
       focusContainer.style.backdropFilter = "blur(0px)";
 
@@ -205,7 +203,11 @@ class CustomImage extends LitElement {
   }
 
   fireLoaded() {
-    this.dispatchEvent(new CustomEvent("loaded"));
+    this.dispatchEvent(new CustomEvent("loaded", {
+      bubbles: true,
+      composed: true,
+      detail: this.success
+    }));
   }
 
   protected override updated(

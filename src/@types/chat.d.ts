@@ -72,6 +72,7 @@ declare global {
     "input-non-text": InputNonText;
     "record-instance": CustomEvent;
     "wave-rawdata": CustomEvent;
+    "clear-wave": CustomEvent;
   }
 }
 

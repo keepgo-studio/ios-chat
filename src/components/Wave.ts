@@ -75,6 +75,18 @@ class Wave extends LitElement {
   constructor() {
     super();
 
+    this.addEventListener("clear-wave", (e) => {
+      delete this._recorder;
+      delete this._rawData;
+      delete this._audioRef;
+
+      for (let i = 0 ; i < FFT_SIZE ; i ++) {
+        this._volumeArr[i].h = 0;
+        this._volumeArr[i].to = 0;
+      }
+      this._offset = 0;
+    });
+
     this.addEventListener("record-instance", (e) => {
       const r: RecordAudio = e.detail;
       r.ctx.resume().then(() => this._recorder = r);
@@ -98,10 +110,7 @@ class Wave extends LitElement {
   }
 
   draw() {
-    if (!this._lifeCycle) {
-      requestAnimationFrame(this.draw.bind(this));
-      return;
-    }
+    if (!this._lifeCycle) return;
 
     const ctx = this._ctx!,
           width = this.canvas.width,
@@ -176,12 +185,15 @@ class Wave extends LitElement {
             block = width / this._blockCnt,
             dotWidth = block * (2 / 3);
 
+      const fillColor = window.getComputedStyle(this).getPropertyValue("--wave-fill"),
+            blankColor = window.getComputedStyle(this).getPropertyValue("--wave-blank");
+
       for (let i = 0 ; i < this._blockCnt ; i++) {
         const x = block * i;
 
         const hotHeight = this._blockDecibelArr[i] * height * 0.7 + dotWidth;
         
-        ctx.fillStyle = ((x + dotWidth) <= widthRatio) ? "#fff" : "rgba(255, 255, 255, 0.5)";
+        ctx.fillStyle = ((x + dotWidth) <= widthRatio) ? fillColor : blankColor;
         ctx.beginPath();
         ctx.roundRect(x, y - hotHeight / 2, dotWidth, hotHeight, 999);
         ctx.fill();
@@ -193,7 +205,7 @@ class Wave extends LitElement {
           ctx.beginPath();
           ctx.rect(x, y - hotHeight / 2, left, hotHeight)
           ctx.clip();
-          ctx.fillStyle = "#fff";
+          ctx.fillStyle = fillColor;
     
           ctx.beginPath();
           ctx.roundRect(x, y - hotHeight / 2, dotWidth, hotHeight, 999);
@@ -214,6 +226,10 @@ class Wave extends LitElement {
 
     const io = new IntersectionObserver((entries) => {
       this._lifeCycle = entries[0].isIntersecting;
+
+      if (this._lifeCycle) {
+        requestAnimationFrame(this.draw.bind(this));
+      }
     })
 
     io.observe(this);

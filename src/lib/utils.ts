@@ -124,3 +124,8 @@ export class Velocity {
 export function pxToNumber(pxStr: string) {
   return Number(pxStr.split("px")[0]);
 }
+
+export async function urlToBlob(blobUrl: string) {
+  const res = await fetch(blobUrl);
+  return await res.blob();
+}
