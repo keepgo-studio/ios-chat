@@ -1,19 +1,28 @@
 {
   "name": "ios-chat",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "1.0.1",
+  "description": "Style chat ui like Apple's iOS",
+  "main": "dist/esm/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
   "scripts": {
-    "build": "node esbuild.mjs",
-    "build:watch": "node esbuild.mjs --watch"
+    "build:watch": "node esbuild.mjs --watch",
+    "build:types": "tsc",
+    "build": "tsc && node esbuild.mjs"
   },
   "keywords": [
     "lit",
     "ios",
-    "chat"
+    "chat",
+    "chatbot",
+    "ui"
   ],
-  "author": "",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/keepgo-studio/ios-chat.git"
+  },
+  "author": "One Commit",
+  "license": "MIT",
   "devDependencies": {
     "esbuild": "0.21.5",
     "ts-lit-plugin": "^2.0.2",
@@ -23,5 +32,9 @@
     "@types/uuid": "^10.0.0",
     "lit": "^3.1.4",
     "uuid": "^10.0.0"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/keepgo-studio/ios-chat/issues"
+  },
+  "homepage": "https://keepgo-studio.github.io/ios-chat"
 }

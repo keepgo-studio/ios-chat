@@ -84,10 +84,18 @@ export default class ChatManager {
   static listen(roomId: string, callback: ListenerCallback) {
     const listenerId = uuidv4();
 
+    if (!(roomId in this.listeners)) this.listeners[roomId] = [];
+
     this.listeners[roomId].push({
       id: listenerId,
       callback
     });
+
+    return listenerId;
+  }
+
+  static unsubscribe(roomId: string, listenerId: string) {
+    this.listeners[roomId] = this.listeners[roomId].filter(({ id }) => id !== listenerId);
   }
 
   static getMessages(roomId: string) {

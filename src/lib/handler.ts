@@ -6,8 +6,24 @@ export async function initChat(roomId: string, messages: ChatMessage[]) {
   ChatManager.rooms[roomId].messages = [...messages];
 }
 
+export function getMessages(roomId: string) {
+  return ChatManager.getMessages(roomId);
+}
+
+export function addRoomListener(roomId: string, callback: ListenerCallback) {
+  const listenerId = ChatManager.listen(roomId, callback);
+
+  return listenerId;
+}
+
+export function removeRoomListener(roomId: string, listenerId: string) {
+  ChatManager.unsubscribe(roomId, listenerId);
+}
+
 export async function sendChat(roomId: string, info: SendInfo) {
-  if (ChatManager.blocked) return false;
+  if (ChatManager.blocked) {
+    throw new Error(`chat room [id: ${roomId}] is currently blocked!`);
+  }
 
   ChatManager.sendMessage("sender", roomId, info);
 
@@ -17,7 +33,9 @@ export async function sendChat(roomId: string, info: SendInfo) {
 }
 
 export async function answerChat(roomId: string, info: SendInfo) {
-  if (ChatManager.blocked) return false;
+  if (ChatManager.blocked) {
+    throw new Error(`chat room [id: ${roomId}] is currently blocked!`);
+  }
 
   ChatManager.sendMessage("receiver", roomId, info);
 
@@ -26,22 +44,16 @@ export async function answerChat(roomId: string, info: SendInfo) {
   return true;
 }
 
-export function getMessages(roomId: string) {
-  return ChatManager.getMessages(roomId);
-}
+export function startAnswerLoading(roomId: string) {
+  if (ChatManager.blocked) {
+    throw new Error(`chat room [id: ${roomId}] is currently blocked!`);
+  }
 
-export function addRoomListener(roomId: string, callback: ListenerCallback) {
-  ChatManager.listen(roomId, callback);
-}
-
-export async function startAnswerLoading(roomId: string) {
   ChatManager.blocked = true;
 
   ChatManager.rooms[roomId].ref.dispatchEvent(
     new CustomEvent("answer-loading-start")
   );
-
-  await delay(DURATION + 1);
 }
 
 export async function endAnswerLoading(roomId: string) {
@@ -51,5 +63,5 @@ export async function endAnswerLoading(roomId: string) {
     new CustomEvent("answer-loading-end")
   );
 
-  await delay(DURATION + 1);
+  await delay(DURATION * 2 + 1);
 }

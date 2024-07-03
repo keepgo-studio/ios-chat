@@ -1,5 +1,31 @@
-// [ ] loading 표현하는 answer 기능
+<p align="center">
+  <img src="./docs/messages.png" style="border-radius:999px" />
+</p>
 
-// [ ] scrollbar component 만들기
 
-// [ ] bounceScroll 구현
+# ios-chat
+
+Small Library to show chat UI as iOS style
+
+You can easliy style your chatbot or chat system with "ios-chat"
+
+## Setup
+
+### using npm
+
+```bash
+  npm install ios-chat
+```
+
+```js
+  import { }  
+```
+
+### using script
+
+```html
+
+```
+
+## Examples
+

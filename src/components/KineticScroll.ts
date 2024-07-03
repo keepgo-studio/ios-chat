@@ -43,6 +43,8 @@ class KineticScroll extends LitElement {
   }
 
   protected override firstUpdated() {
+    let lifeCycle = true;
+
     this.addEventListener("scroll", () => {
       this._position = this.scrollTop;
     }, { passive: true });
@@ -52,6 +54,8 @@ class KineticScroll extends LitElement {
     const child = this.slotElem.assignedElements({ flatten: true })[0] as HTMLElement;
 
     const trackChildStyle = async () => {
+      if (!lifeCycle) return;
+
       const h = child.scrollHeight - this.offsetHeight;
       
       if (scrollLimitPx !== h) {
@@ -187,6 +191,8 @@ class KineticScroll extends LitElement {
 
     let prevDest = 0;
     const fireEvent = async () => {
+      if (!lifeCycle) return;
+
       const cs = window.getComputedStyle(this.container);
       const pt = pxToNumber(cs.paddingTop);
 
@@ -215,6 +221,12 @@ class KineticScroll extends LitElement {
     if (this.startAt) {
       this.scrollTo(0, this.scrollHeight);
     }
+
+    const io = new IntersectionObserver((entries) => {
+      lifeCycle = entries[0].isIntersecting;
+    })
+
+    io.observe(this);
   }
 }
 

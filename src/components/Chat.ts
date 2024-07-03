@@ -2,7 +2,7 @@ import { globalStyles } from "@/lib/core";
 import ChatManager, { type SendInfo } from "@/lib/service";
 import { LitElement, PropertyValueMap, css, html } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
-import { isOnlySpaces } from "@/lib/utils";
+import { isOnlySpaces, throttle } from "@/lib/utils";
 
 import arrowSvg from "../assets/arrow.up.circle.fill.svg";
 import plusSvg from "../assets/plus.svg";
@@ -23,6 +23,7 @@ class Chat extends LitElement {
         --input-bg: rgba(10, 10, 10, 0.75);
         --red: rgba(255, 69, 58);
         --blue: #39a7fc;
+        --disable: #d5d5d5;
         --ease-out-back: cubic-bezier(0.34, 1.36, 0.44, 1);
         --textarea: rgba(255, 255, 255, 0.9);
         --scrollbar: #a5a5a5;
@@ -34,11 +35,12 @@ class Chat extends LitElement {
         --audio-loading: rgba(222, 222, 222, 0.7);
       }
 
-      :host([dark]) {
+      :host([dark=true]) {
         --theme-bg: #000;
         --theme-color: #fff;
         --message-color: #26262a;
         --chat-input-bg: rgba(0, 0, 0, 0.6);
+        --disable: #5c5c5c;
         --textarea: rgba(0, 0, 0, 0.5);
         --scrollbar: rgb(116 116 116);
         --wave-fill: #fff;
@@ -168,7 +170,7 @@ class Chat extends LitElement {
       }
       textarea:disabled {
         cursor: not-allowed;
-        filter: brightness(0.5);
+        background-color: var(--disable);
       }
       textarea::-webkit-scrollbar {
         display: none;
@@ -392,7 +394,7 @@ class Chat extends LitElement {
                 ?disabled=${this._textDisabled}
                 @keypress=${this.keyHandler}
                 @click=${this.inputFocusHandler}
-                @input=${this.inputFocusHandler}
+                @input=${throttle(this.inputFocusHandler, 500)}
               ></textarea>
             </div>
 

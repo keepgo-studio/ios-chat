@@ -59,7 +59,7 @@ class Screen extends LitElement {
         transform: scale(0.95);
       }
       .message:has(ios-chat-spinner) {
-        background-color: #858585 !important;
+        background-color: var(--disable) !important;
       }
       ios-chat-spinner {
         display: block;
@@ -268,13 +268,14 @@ class Screen extends LitElement {
       from: scrollTop,
       dest: scrollDest,
       duration: DURATION,
-    }),
-      moveTo(recentElem, {
-        from: top,
-        dest: 0,
-        duration: DURATION / 2,
-        styleAttr: "top"
-      });
+    });
+    
+    moveTo(recentElem, {
+      from: top,
+      dest: 0,
+      duration: top > recentCr.height ? 500 : DURATION,
+      styleAttr: "top"
+    });
 
     await delay(300);
     

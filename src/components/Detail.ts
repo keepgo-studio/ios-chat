@@ -6,7 +6,6 @@ import ChatManager from "@/lib/service";
 import PhotoSvg from "../assets/photos.svg";
 import AudioSvg from "../assets/waveform.circle.fill.svg";
 import RecordSvg from "../assets/mic.circle.fill.svg";
-import { pxToNumber } from "@/lib/utils";
 
 @customElement("ios-chat-detail")
 class Detail extends LitElement {
