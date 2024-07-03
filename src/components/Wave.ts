@@ -178,7 +178,9 @@ class Wave extends LitElement {
 
       let timeRatio = 0;
       if (this._audioRef) {
-        timeRatio = this._audioRef.currentTime / this._duration;
+        const duration = this._audioRef.duration !== Infinity ? this._audioRef.duration : this._duration;
+
+        timeRatio = this._audioRef.currentTime / duration;
       }
 
       const widthRatio = width * timeRatio,

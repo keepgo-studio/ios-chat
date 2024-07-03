@@ -34,7 +34,7 @@ class Chat extends LitElement {
         --audio-loading: rgba(222, 222, 222, 0.7);
       }
 
-      :host-context(.dark) {
+      :host([dark]) {
         --theme-bg: #000;
         --theme-color: #fff;
         --message-color: #26262a;
@@ -82,6 +82,7 @@ class Chat extends LitElement {
         align-items: flex-end;
         padding: 10px 16px;
         backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         background-color: var(--chat-input-bg);
         font-size: var(--font-size);
       }
@@ -96,6 +97,7 @@ class Chat extends LitElement {
         height: 4.2em;
         background-color: var(--chat-input-bg);
         backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
       }
 
       .btn-container {

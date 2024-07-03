@@ -28,6 +28,7 @@ class Detail extends LitElement {
         z-index: 999;
         background-color: var(--chat-input-bg);
         backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
       }
 
       ul {
@@ -70,6 +71,7 @@ class Detail extends LitElement {
         overflow: hidden;
         border-radius: 999px;
         aspect-ratio: 1/1;
+        box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.15);
       }
       p {
         margin-left: 1em;

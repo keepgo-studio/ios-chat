@@ -264,6 +264,7 @@ class Audio extends LitElement {
         border-radius: 999px;
         background-color: var(--audio-loading);
         backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
       }
       .loading ios-chat-spinner {
         width: 2em;
