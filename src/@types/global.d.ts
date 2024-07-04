@@ -1,11 +1,7 @@
-declare global {
-  type ChatMessageType = TextType | ImgType | AudioType | "loading";
-  
-  type Role = 'sender' | 'receiver';
-  type TextType = 'text';
-  type ImgType = 'img';
-  type AudioType = 'audio';
+import type { AudioType, ChatMessageType, ImgType, Role } from "@/lib/service";
 
+
+declare global {  
   type Profile = {
     title: string;
     imgSrc: string;

@@ -8,7 +8,7 @@ class Scrollbar extends LitElement {
     :host {
       position: absolute;
       display: block;
-      width: clamp(4px, 0.5vw, 9px);
+      width: clamp(3px, 1%, 9px);
       height: 100%;
       overflow: hidden;
       top: 0;

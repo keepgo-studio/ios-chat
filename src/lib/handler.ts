@@ -1,4 +1,9 @@
-import ChatManager, { type ListenerCallback, type SendInfo } from "./service";
+import ChatManager, {
+  type Role,
+  type ChatMessageType,
+  type ListenerCallback,
+  type SendInfo,
+} from "./service";
 import { delay } from "./utils";
 import { DURATION } from "@/components/Screen";
 
@@ -10,7 +15,7 @@ export type ChatMessage = {
   content: string;
 };
 
-export async function initChat(roomId: string, messages: ChatMessage[]) {
+export function initChat(roomId: string, messages: ChatMessage[]) {
   ChatManager.rooms[roomId].messages = [...messages];
 
   ChatManager.rooms[roomId].ref.dispatchEvent(new CustomEvent("init-message"));

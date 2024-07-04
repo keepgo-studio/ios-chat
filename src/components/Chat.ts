@@ -352,7 +352,8 @@ class Chat extends LitElement {
         imgWrapper.querySelector("div")?.addEventListener("click", () => {
           this.textArea.style.borderRadius = '';
           imgWrapper.remove();
-          this._msgQueue.shift();
+
+          this._msgQueue = this._msgQueue.filter((_item) => _item.content !== content);
         });
 
         this.textAreaWrapper.prepend(imgWrapper);
@@ -484,7 +485,7 @@ class Chat extends LitElement {
     if (h > 0) {
       this.textArea.style.height = `${h}px`;
     }
-    this.sendBtn.style.display = this.textArea.value ? "flex" : "none";
+    this.sendBtn.style.display = this._msgQueue.length > 0 || this.textArea.value ? "flex" : "none";
 
     this.syncScroll();
   }

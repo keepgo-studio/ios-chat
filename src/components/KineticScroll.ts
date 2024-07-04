@@ -224,6 +224,11 @@ class KineticScroll extends LitElement {
 
     const io = new IntersectionObserver((entries) => {
       lifeCycle = entries[0].isIntersecting;
+
+      if (lifeCycle) {
+        requestAnimationFrame(trackChildStyle);
+        requestAnimationFrame(fireEvent);
+      }
     })
 
     io.observe(this);

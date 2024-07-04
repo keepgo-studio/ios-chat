@@ -4,6 +4,7 @@ import { LitElement, PropertyValueMap, css, html } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import type { ChatMessage } from "@/lib/handler";
+import type{ ChatMessageType } from "@/lib/service";
 
 export const DURATION = 300;
 @customElement("ios-chat-screen")
@@ -240,7 +241,7 @@ class Screen extends LitElement {
 
     await delay(1);
 
-    recentElem.style.transition = "width ease 300ms, background ease 500ms";
+    recentElem.style.transition = `ease ${DURATION}ms, background ease 500ms`;
     recentElem.style.background =
       recent.role === "sender" ? "var(--blue)" : "var(--message-color)";
 
@@ -265,17 +266,11 @@ class Screen extends LitElement {
       recentElem.style.width = `${contentWidth + 1}px`;
     }
 
+    recentElem.style.top = 0 + "px";
     moveTo(this.scrollContainer, {
       from: scrollTop,
       dest: scrollDest,
       duration: DURATION,
-    });
-    
-    moveTo(recentElem, {
-      from: top,
-      dest: 0,
-      duration: top > recentCr.height ? 500 : DURATION,
-      styleAttr: "top"
     });
 
     await delay(300);
@@ -325,7 +320,11 @@ class Screen extends LitElement {
     const target = (e.currentTarget as HTMLElement);
     const img = target.querySelector("ios-chat-img");
 
-    if (img && img.getAttribute("success") !== null) {
+    if (
+      img &&
+      img.getAttribute("success") !== null &&
+      this.ul.offsetHeight > this.scrollContainer.offsetHeight
+    ) {
       cancelMoving(this.scrollContainer);
 
       this.scrollContainer.scrollTo({
@@ -333,6 +332,8 @@ class Screen extends LitElement {
         top: target.offsetTop,
         behavior: "smooth"
       });
+
+      e.stopPropagation();
     }
   }
 

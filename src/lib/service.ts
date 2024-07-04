@@ -1,6 +1,13 @@
 import { v4 as uuidv4 } from "uuid";
 import type { ChatMessage } from "./handler";
 
+export type Role = 'sender' | 'receiver';
+export type TextType = 'text';
+export type ImgType = 'img';
+export type AudioType = 'audio';
+
+export type ChatMessageType = TextType | ImgType | AudioType | "loading";
+
 export type SendInfo = {
   type: ChatMessageType;
   content: string;
@@ -63,7 +70,10 @@ export default class ChatManager {
       this.rooms[roomId].messages.push(msg);
 
       afterMessage();
-      sendMessageToListeners(roomId, msg);
+
+      if (msg.type !== "loading") {
+        sendMessageToListeners(roomId, msg);
+      }
     });
   }
 
