@@ -3,6 +3,7 @@ import ChatManager, { type SendInfo } from "@/lib/service";
 import { LitElement, PropertyValueMap, css, html } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { isOnlySpaces, throttle } from "@/lib/utils";
+import type { ChatMessage } from "@/lib/handler";
 
 import arrowSvg from "../assets/arrow.up.circle.fill.svg";
 import plusSvg from "../assets/plus.svg";
@@ -249,12 +250,12 @@ class Chat extends LitElement {
   ];
 
   private _msgQueue: SendInfo[] = [];
+  
+  @state()
+  _id: string = "";
 
   @state()
   _messageList: ChatMessage[] = [];
-
-  @state()
-  _id: string = this.getAttribute("room-id") ?? "";
 
   @state()
   _textDisabled = false;
@@ -283,11 +284,19 @@ class Chat extends LitElement {
   @query("ios-chat-audio")
   audioElem!: HTMLElement;
 
-  constructor() {
-    super();
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+
+    ChatManager.removeRoom(this._id);
+  }
+
+  override connectedCallback() {
+    super.connectedCallback();
+
+    this._id = this.getAttribute("room-id") ?? "";
 
     if (!this._id) {
-      throw new Error("<ios-chat> tag need roomId attribute");
+      throw new Error("<ios-chat> tag need 'room-id' attribute");
     }
 
     ChatManager.roomCreated(this._id, this, () => {
@@ -303,6 +312,10 @@ class Chat extends LitElement {
         })
       )
     });
+
+    this.addEventListener("init-message", () => {
+      this._messageList = [...ChatManager.getMessages(this._id)];
+    })
 
     this.addEventListener("answer-loading-start", () => {
       ChatManager.sendMessage("receiver", this._id, {
@@ -467,7 +480,10 @@ class Chat extends LitElement {
 
   inputFocusHandler() {
     this.textArea.style.height = '';
-    this.textArea.style.height = `${this.textArea.scrollHeight}px`;
+    const h = this.textArea.scrollHeight;
+    if (h > 0) {
+      this.textArea.style.height = `${h}px`;
+    }
     this.sendBtn.style.display = this.textArea.value ? "flex" : "none";
 
     this.syncScroll();

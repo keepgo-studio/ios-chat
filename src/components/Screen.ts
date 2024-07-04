@@ -3,6 +3,7 @@ import { cancelMoving, delay, minMax, moveTo, pxToNumber } from "@/lib/utils";
 import { LitElement, PropertyValueMap, css, html } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
+import type { ChatMessage } from "@/lib/handler";
 
 export const DURATION = 300;
 @customElement("ios-chat-screen")
@@ -140,8 +141,8 @@ class Screen extends LitElement {
   @query("ios-chat-scrollbar")
   scrollbar!: HTMLElement;
 
-  constructor() {
-    super();
+  override connectedCallback() {
+    super.connectedCallback();
 
     this.addEventListener("input-fired", (e) => {
       this._inputWidth = e.detail.width;

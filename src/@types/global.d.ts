@@ -1,12 +1,4 @@
 declare global {
-  type ChatRoom = {
-    id: string;
-    ref: HTMLElement;
-    profile?: Profile;
-    createdDatetime: number;
-    messages: Array<ChatMessage>;
-  };
-
   type ChatMessageType = TextType | ImgType | AudioType | "loading";
   
   type Role = 'sender' | 'receiver';
@@ -14,20 +6,11 @@ declare global {
   type ImgType = 'img';
   type AudioType = 'audio';
 
-  type ChatMessage = {
-    type: ChatMessageType;
-    role: Role;
-    id: string;
-    createdDatetime: number;
-    content: string;
-  };
-
   type Profile = {
     title: string;
     imgSrc: string;
   };
 
-  
   type SendMessageEventDetail = {
     type: ChatMessageType;
     content: string;
@@ -62,6 +45,7 @@ declare global {
   }
 
   interface HTMLElementEventMap {
+    "init-message": CustomEvent;
     "send-message": SendMessageEvent;
     "answer-loading-start": CustomEvent;
     "answer-loading-end": CustomEvent;

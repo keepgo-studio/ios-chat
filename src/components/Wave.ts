@@ -72,8 +72,8 @@ class Wave extends LitElement {
     }
   }
 
-  constructor() {
-    super();
+  override connectedCallback() {
+    super.connectedCallback();
 
     this.addEventListener("clear-wave", (e) => {
       delete this._recorder;
@@ -103,6 +103,7 @@ class Wave extends LitElement {
       this.calculateBlocks();
     })
   }
+
   override render() {
     return html`
       <canvas width=${this.width} height=${this.height}></canvas>

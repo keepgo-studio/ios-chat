@@ -2,8 +2,18 @@ import ChatManager, { type ListenerCallback, type SendInfo } from "./service";
 import { delay } from "./utils";
 import { DURATION } from "@/components/Screen";
 
+export type ChatMessage = {
+  type: ChatMessageType;
+  role: Role;
+  id: string;
+  createdDatetime: number;
+  content: string;
+};
+
 export async function initChat(roomId: string, messages: ChatMessage[]) {
   ChatManager.rooms[roomId].messages = [...messages];
+
+  ChatManager.rooms[roomId].ref.dispatchEvent(new CustomEvent("init-message"));
 }
 
 export function getMessages(roomId: string) {
@@ -21,7 +31,7 @@ export function removeRoomListener(roomId: string, listenerId: string) {
 }
 
 export async function sendChat(roomId: string, info: SendInfo) {
-  if (ChatManager.blocked) {
+  if (ChatManager.rooms[roomId].blocked) {
     throw new Error(`chat room [id: ${roomId}] is currently blocked!`);
   }
 
@@ -33,7 +43,7 @@ export async function sendChat(roomId: string, info: SendInfo) {
 }
 
 export async function answerChat(roomId: string, info: SendInfo) {
-  if (ChatManager.blocked) {
+  if (ChatManager.rooms[roomId].blocked) {
     throw new Error(`chat room [id: ${roomId}] is currently blocked!`);
   }
 
@@ -45,11 +55,11 @@ export async function answerChat(roomId: string, info: SendInfo) {
 }
 
 export function startAnswerLoading(roomId: string) {
-  if (ChatManager.blocked) {
+  if (ChatManager.rooms[roomId].blocked) {
     throw new Error(`chat room [id: ${roomId}] is currently blocked!`);
   }
 
-  ChatManager.blocked = true;
+  ChatManager.rooms[roomId].blocked = true;
 
   ChatManager.rooms[roomId].ref.dispatchEvent(
     new CustomEvent("answer-loading-start")
@@ -57,11 +67,15 @@ export function startAnswerLoading(roomId: string) {
 }
 
 export async function endAnswerLoading(roomId: string) {
-  ChatManager.blocked = false;
+  ChatManager.rooms[roomId].blocked = false;
 
   ChatManager.rooms[roomId].ref.dispatchEvent(
     new CustomEvent("answer-loading-end")
   );
 
   await delay(DURATION * 2 + 1);
+}
+
+export async function isBlocked(roomId: string) {
+  return ChatManager.rooms[roomId].blocked;
 }

@@ -482,6 +482,7 @@ class Audio extends LitElement {
   resizeHandler = debounce(() => this.syncCanvasSize(), 500);
 
   override disconnectedCallback(): void {
+    super.disconnectedCallback();
     window.removeEventListener("resize", this.resizeHandler);  
   }
 

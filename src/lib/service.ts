@@ -1,8 +1,18 @@
 import { v4 as uuidv4 } from "uuid";
+import type { ChatMessage } from "./handler";
 
 export type SendInfo = {
   type: ChatMessageType;
   content: string;
+};
+
+type ChatRoom = {
+  id: string;
+  ref: HTMLElement;
+  profile?: Profile;
+  createdDatetime: number;
+  messages: Array<ChatMessage>;
+  blocked: boolean;
 };
 
 export type ListenerCallback = (msg: ChatMessage) => void;
@@ -15,8 +25,6 @@ type Listener = {
 export default class ChatManager {
   static rooms: { [roomId: string]: ChatRoom } = {};
   static listeners: { [roomId: string]: Listener[] } = {};
-  static blocked = false;
-
   static currentRoomId: string | null = null;
 
   static roomCreated(
@@ -28,12 +36,14 @@ export default class ChatManager {
       throw new Error(`${roomId} is already exist`);
     }
 
-    this.listeners[roomId] = []
+    this.listeners[roomId] = [];
+
     this.rooms[roomId] = {
       id: roomId,
       ref,
       createdDatetime: Date.now(),
       messages: [],
+      blocked: false
     };
 
     const sendMessageToListeners = (roomId: string, msg: ChatMessage) => {
@@ -55,6 +65,10 @@ export default class ChatManager {
       afterMessage();
       sendMessageToListeners(roomId, msg);
     });
+  }
+
+  static removeRoom(roomId: string) {
+    delete this.rooms[roomId];
   }
 
   static sendMessage(role: Role, roomId: string, info: SendInfo) {
@@ -83,8 +97,6 @@ export default class ChatManager {
 
   static listen(roomId: string, callback: ListenerCallback) {
     const listenerId = uuidv4();
-
-    if (!(roomId in this.listeners)) this.listeners[roomId] = [];
 
     this.listeners[roomId].push({
       id: listenerId,
@@ -118,3 +130,5 @@ export class AudioManager {
     elem.play();
   }
 }
+
+// [ ] 없는 audio tag는 어떻게 될까?

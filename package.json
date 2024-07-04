@@ -6,7 +6,8 @@
   "types": "dist/index.d.ts",
   "files": ["dist"],
   "scripts": {
-    "build:watch": "node esbuild.mjs --watch",
+    "build:watch-build": "node esbuild.mjs --watch",
+    "build:watch-types": "tsc --watch",
     "build:types": "tsc",
     "build": "tsc && node esbuild.mjs"
   },
