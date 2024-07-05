@@ -87,6 +87,6 @@ export async function endAnswerLoading(roomId: string) {
   await delay(DURATION * 2 + 1);
 }
 
-export async function isBlocked(roomId: string) {
+export function isBlocked(roomId: string) {
   return ChatManager.rooms[roomId].blocked;
 }
