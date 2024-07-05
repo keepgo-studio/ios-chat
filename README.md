@@ -1,5 +1,8 @@
 # ios-chat
 
+[![NPM](./docs/npm.png)](https://www.npmjs.com/package/ios-chat?activeTab=readme) ![license](./docs/license.png)
+
+
 <p align="center">
   <img src="./docs/icon.png" />
 </p>
@@ -72,7 +75,7 @@ ios-chat is just using Web Components API, so you can attach everywhere inside o
     Don't be confused while using [answerChat( )](#answerchat) and [sendChat( )](#sendchat)
 
 <p align="center">
-  <img src="./docs/sample.png" style="width: 300px"/>
+  <img src="./docs/sample.webp" style="width: 300px"/>
 </p>
 
 2. all images and audio are created with URL.createObjectURL( );
