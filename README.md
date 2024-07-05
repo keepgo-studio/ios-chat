@@ -25,7 +25,11 @@ currently, all the library's functions only works at browser (not support SSR)
 ### using script
 
 ```html
-  <script src=""></script>
+  <!-- esm module -->
+  <script src="https://unpkg.com/ios-chat@1.1.0/dist/esm/index.js"></script>
+
+  <!-- umd module -->
+  <script src="https://unpkg.com/ios-chat@1.1.0/dist/umd/index.js"></script>
 ```
 
 ```html
@@ -209,6 +213,6 @@ type SendInfo = {
 
 [next js + ios-chat](https://github.com/keepgo-studio/example-ios-chat-next)
 
-[vanilla JS + ios-chat]()
+[vanilla JS + ios-chat](https://keepgo-studio.github.io/ios-chat/)
 
 # [Issues](https://github.com/keepgo-studio/ios-chat/issues)
