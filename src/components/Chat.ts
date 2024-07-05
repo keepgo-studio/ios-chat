@@ -79,7 +79,7 @@ class Chat extends LitElement {
         position: absolute;
         bottom: 0;
         left: 0;
-        z-index: 99;
+        z-index: 8;
         width: 100%;
         display: flex;
         align-items: flex-end;
@@ -96,7 +96,7 @@ class Chat extends LitElement {
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 100;
+        z-index: 9;
         height: 4.2em;
         background-color: var(--chat-input-bg);
         backdrop-filter: blur(12px);

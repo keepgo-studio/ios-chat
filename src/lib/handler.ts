@@ -13,6 +13,7 @@ export type ChatMessage = {
   id: string;
   createdDatetime: number;
   content: string;
+  origin?: string;
 };
 
 export function initChat(roomId: string, messages: ChatMessage[]) {

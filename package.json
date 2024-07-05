@@ -4,7 +4,10 @@
   "description": "Style chat ui like Apple's iOS",
   "main": "dist/esm/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist",
+    "@types"
+  ],
   "scripts": {
     "build:watch-build": "node esbuild.mjs --watch",
     "build:watch-types": "tsc --watch",

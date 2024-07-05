@@ -222,7 +222,7 @@ class Screen extends LitElement {
 
     // init style
     recentElem.style.background = "var(--textarea)";
-    recentElem.style.zIndex = recent.role === "sender" ? "100" : "";
+    recentElem.style.zIndex = recent.role === "sender" ? "10" : "";
     recentElem.style.top = top + "px";
 
     if (recent.type === "text") {

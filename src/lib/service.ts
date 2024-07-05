@@ -11,6 +11,7 @@ export type ChatMessageType = TextType | ImgType | AudioType | "loading";
 export type SendInfo = {
   type: ChatMessageType;
   content: string;
+  origin?: string;
 };
 
 type ChatRoom = {
@@ -140,5 +141,3 @@ export class AudioManager {
     elem.play();
   }
 }
-
-// [ ] 없는 audio tag는 어떻게 될까?
