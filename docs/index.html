@@ -4,8 +4,46 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>iOS chat demo</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="./styles.css" t>
 </head>
 <body>
+  <nav>
+    <img src="./icon.png"/>
+  </nav>
+
+  <main>
+      <h1>
+        iOS Chat
+        <img class="icon" src="./icon.png">
+      </h1>
+
+      <img class="hero" src="./hero.webp">
+
+      <section>
+        <button id="web" style="background-color: #39a7fc;">
+          <img src="./safari.png"/> Get Example page
+        </button>
+        <button id="npm" style="background-color: #c63634;">
+          <img src="./npm.svg"/> Get NPM Link
+        </button>
+        <button id="github" style="background-color: #03060a;">
+          <img src="./github.png" /> Get Github Link
+        </button>
+      </section>
+
+      <div class="chat-btn-container">
+        <button>
+          <img class="icon" src="./icon.png">
+        </button>
+
+        <div class="chat">
+          <ios-chat room-id="chat" dark="true"></ios-chat>
+        </div>
+      </div>
+  </main>
+
+  <script src="https://unpkg.com/ios-chat@1.1.2/dist/umd/index.js"></script>
   <script src="./index.js"></script>
 </body>
 </html>
