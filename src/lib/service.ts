@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import type { ChatMessage } from "./handler";
+import type { ChatMessage, SendInfo } from "./handler";
 
 export type Role = 'sender' | 'receiver';
 export type TextType = 'text';
@@ -7,12 +7,6 @@ export type ImgType = 'img';
 export type AudioType = 'audio';
 
 export type ChatMessageType = TextType | ImgType | AudioType | "loading";
-
-export type SendInfo = {
-  type: ChatMessageType;
-  content: string;
-  origin?: string;
-};
 
 type ChatRoom = {
   id: string;

@@ -1,9 +1,9 @@
 import { globalStyles } from "@/lib/core";
-import ChatManager, { type SendInfo } from "@/lib/service";
+import ChatManager from "@/lib/service";
 import { LitElement, PropertyValueMap, css, html } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { isOnlySpaces, throttle } from "@/lib/utils";
-import type { ChatMessage } from "@/lib/handler";
+import type { ChatMessage, SendInfo } from "@/lib/handler";
 
 import arrowSvg from "../assets/arrow.up.circle.fill.svg";
 import plusSvg from "../assets/plus.svg";

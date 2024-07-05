@@ -2,7 +2,6 @@ import ChatManager, {
   type Role,
   type ChatMessageType,
   type ListenerCallback,
-  type SendInfo,
 } from "./service";
 import { delay } from "./utils";
 import { DURATION } from "@/components/Screen";
@@ -12,6 +11,12 @@ export type ChatMessage = {
   role: Role;
   id: string;
   createdDatetime: number;
+  content: string;
+  origin?: string;
+};
+
+export type SendInfo = {
+  type: ChatMessageType;
   content: string;
   origin?: string;
 };
