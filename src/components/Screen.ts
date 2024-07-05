@@ -1,5 +1,5 @@
 import { globalStyles } from "@/lib/core";
-import { cancelMoving, delay, minMax, moveTo, pxToNumber } from "@/lib/utils";
+import { cancelMoving, delay, linkify, minMax, moveTo, pxToNumber } from "@/lib/utils";
 import { LitElement, PropertyValueMap, css, html } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
@@ -17,7 +17,7 @@ class Screen extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 2px;
-        padding: 10px 16px calc(2.4em + 20px) 12px;
+        padding: 10px 12px calc(2.4em + 20px) 16px;
       }
       ios-chat-scrollbar {
         position: absolute;
@@ -28,6 +28,20 @@ class Screen extends LitElement {
 
       li {
         display: block;
+      }
+      a {
+        text-decoration: none;
+        font-weight: bold;
+        color: #626262;
+      }
+      .message.answer a {
+        color: #adadad;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      a:active {
+        filter: brightness(0.9);
       }
       .message {
         border-radius: var(--border-radius);
@@ -162,7 +176,7 @@ class Screen extends LitElement {
   renderContent(type: ChatMessageType, content: string) {
     switch (type) {
       case "text":
-        return html`<p>${content}</p>`;
+        return html`<p>${linkify(content)}</p>`;
       case "audio":
         return html`<ios-chat-audio-message .src=${content}></ios-chat-audio-message>`;
       case "img":

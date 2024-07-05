@@ -1,3 +1,5 @@
+import { html } from "lit";
+
 export function isOnlySpaces(str: string) {
   return str.trim().length === 0;
 }
@@ -128,4 +130,23 @@ export function pxToNumber(pxStr: string) {
 export async function urlToBlob(blobUrl: string) {
   const res = await fetch(blobUrl);
   return await res.blob();
+}
+
+export function linkify(text: string) {
+  const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;  
+  const parts = text.split(urlPattern);
+  const htmlArr = [];
+
+  for (let i = 0 ; i < parts.length ; i++) {
+    const part = parts[i];
+
+    if (urlPattern.test(part)) {
+      htmlArr.push(html`<a href="${part}" target="_blank">${part}</a>`);
+      i++;
+    } else {
+      htmlArr.push(html`${part}`);
+    }
+  }
+
+  return htmlArr;
 }
