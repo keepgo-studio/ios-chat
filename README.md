@@ -14,6 +14,36 @@ You can easily style your chatbot or chat system with "ios-chat"
 
 currently, all the library's functions only works at browser (not support SSR)
 
+---
+
+### Contents
+
+- [Setup](#setup)
+  + [using npm](#using-npm)
+  + [using script](#using-script)
+- [Basic Concepts](#basic-concepts)
+   * [attributes](#attributes)
+      + [example on html](#example-on-html)
+   * [Precautions](#precautions)
+- [API](#api)
+   * [functions](#functions)
+      + [sendChat (async)](#sendchat-async)
+      + [answerChat (async)](#answerchat-async)
+      + [startAnswerLoading](#startanswerloading)
+      + [endAnswerLoading (async)](#endanswerloading-async)
+      + [isBlocked](#isblocked)
+      + [getMessages](#getmessages)
+      + [initChat](#initchat)
+      + [addRoomListener](#addroomlistener)
+      + [removeRoomListener](#removeroomlistener)
+   * [types](#types)
+      + [ChatMessage](#chatmessage)
+      + [SendInfo](#sendinfo)
+- [Examples](#examples)
+- [Issues](#issues)
+
+---
+
 # Setup
 
 ### using npm
@@ -30,14 +60,15 @@ currently, all the library's functions only works at browser (not support SSR)
 
 ```html
   <!-- esm module -->
-  <script src="https://unpkg.com/ios-chat@1.1.0/dist/esm/index.js"></script>
+  <script src="https://unpkg.com/ios-chat/dist/esm/index.js"></script>
 
   <!-- umd module -->
-  <script src="https://unpkg.com/ios-chat@1.1.0/dist/umd/index.js"></script>
+  <script src="https://unpkg.com/ios-chat/dist/umd/index.js"></script>
 ```
 
 ```html
 <ios-chat room-id="example"></ios-chat>
+
 <script>
   Chat.addRoomListener("example", (msg) => {
     // ...
@@ -61,12 +92,25 @@ ios-chat is just using Web Components API, so you can attach everywhere inside o
 
     The attribute for setting dark mode
 
-    if it is true, **dark** mode appeared
+    if it is `true`, **dark** mode appeared
+
+    default value is `false`
+
+3. textonly: `boolean` (optional)
+
+    The attribute for setting input mode
+
+    if it is `true`, the sender can only send string messages
+
+    default value is `false`
 
 ### example on html
 
 ```html
 <ios-chat room-id="chat" dark="true"></ios-chat>
+
+<!-- only string sending -->
+<ios-chat room-id="chat" dark="true" textonly></ios-chat>
 ```
 
 ## Precautions
@@ -88,7 +132,7 @@ ios-chat is just using Web Components API, so you can attach everywhere inside o
 
 # API
 
-## funcionts
+## functions
 
 ### sendChat (async)
 ```ts
@@ -211,7 +255,6 @@ type SendInfo = {
   origin?: string;
 }
 ```
-
 
 # Examples
 

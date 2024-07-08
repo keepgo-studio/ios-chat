@@ -263,6 +263,9 @@ class Chat extends LitElement {
   @state()
   _animatePlusBtn = false;
 
+  @state()
+  _textonly = false;
+
   @query("ios-chat-screen")
   screen!: HTMLElement;
   
@@ -294,6 +297,13 @@ class Chat extends LitElement {
     super.connectedCallback();
 
     this._id = this.getAttribute("room-id") ?? "";
+
+    const textonly = this.getAttribute("textonly");
+    if (textonly === "" || textonly === "true") {
+      this._textonly = true;
+    } else {
+      this._textonly = false;
+    }
 
     if (!this._id) {
       throw new Error("<ios-chat> tag need 'room-id' attribute");
@@ -371,11 +381,13 @@ class Chat extends LitElement {
       <div class="root">
         <ios-chat-screen .data=${this._messageList}></ios-chat-screen>
 
-        <ios-chat-detail 
-          .roomId=${this._id}
-          .open=${this._animatePlusBtn}
-          @click=${() => this._animatePlusBtn = false}
-        ></ios-chat-detail>
+        ${this._textonly ? "" : html`
+          <ios-chat-detail 
+            .roomId=${this._id}
+            .open=${this._animatePlusBtn}
+            @click=${() => this._animatePlusBtn = false}
+          ></ios-chat-detail>
+        `}
 
         <ios-chat-audio @audio-end=${(e: CustomEvent) => {
           this.audioElem.setAttribute("src", "");
@@ -391,15 +403,17 @@ class Chat extends LitElement {
         }}></ios-chat-audio>
         
         <section class="chat-input">
-          <div class="btn-container" @click=${(e: Event) => this._animatePlusBtn = true}>
-            <button>
-              <ios-chat-svg .data=${plusSvg}></ios-chat-svg>
-            </button>
+          ${this._textonly ? "" : html`
+            <div class="btn-container" @click=${() => this._animatePlusBtn = true}>
+              <button>
+                <ios-chat-svg .data=${plusSvg}></ios-chat-svg>
+              </button>
 
-            <button class="copy">
-              <ios-chat-svg .data=${plusSvg}></ios-chat-svg>
-            </button>
-          </div>
+              <button class="copy">
+                <ios-chat-svg .data=${plusSvg}></ios-chat-svg>
+              </button>
+            </div>
+          `}
 
           <div class="textarea-container">
             <div class="textarea-wrapper">
@@ -424,7 +438,7 @@ class Chat extends LitElement {
   }
 
   protected override updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
-    if (_changedProperties.has("_animatePlusBtn")) {
+    if (!this._textonly && _changedProperties.has("_animatePlusBtn")) {
       if (this._animatePlusBtn) {
         this.copyBtn.style.transform = `translate(150%, -${this.offsetHeight / 4}px) scale(5)`;
         this.copyBtn.style.filter = "blur(10px)";
