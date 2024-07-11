@@ -1,6 +1,8 @@
 # ios-chat
 
-[![NPM](./docs/npm.png)](https://www.npmjs.com/package/ios-chat?activeTab=readme) ![license](./docs/license.png)
+<a href="https://github.com/keepgo-studio/ios-chat">
+  <img style="width:50px" src="./docs/npm.logo.png">
+</a>
 
 [demo](https://keepgo-studio.github.io/example-ios-chat-next/)
 
