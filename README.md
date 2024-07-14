@@ -262,6 +262,6 @@ type SendInfo = {
 
 [next js + ios-chat](https://github.com/keepgo-studio/example-ios-chat-next)
 
-[vanilla JS + ios-chat](https://keepgo-studio.github.io/ios-chat/)
+[vanilla JS + ios-chat]([https://keepgo-studio.github.io/ios-chat/](https://github.com/keepgo-studio/ios-chat/tree/main/docs))
 
 # [Issues](https://github.com/keepgo-studio/ios-chat/issues)
