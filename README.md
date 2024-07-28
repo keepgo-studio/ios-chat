@@ -1,6 +1,6 @@
 # ios-chat
 
-<a href="https://github.com/keepgo-studio/ios-chat">
+<a href="https://www.npmjs.com/package/ios-chat">
   <img style="width:50px" src="./docs/npm.logo.png">
 </a>
 
