@@ -9,7 +9,7 @@
     "@types"
   ],
   "scripts": {
-    "build:watch-build": "node esbuild.mjs --watch",
+    "build:watch": "node esbuild.mjs --watch",
     "build:watch-types": "tsc --watch",
     "build:types": "tsc",
     "build": "tsc && node esbuild.mjs"
@@ -33,9 +33,8 @@
     "typescript": "^5.5.2"
   },
   "dependencies": {
-    "@types/uuid": "^10.0.0",
     "lit": "^3.1.4",
-    "uuid": "^10.0.0"
+    "xstate": "^5.19.2"
   },
   "bugs": {
     "url": "https://github.com/keepgo-studio/ios-chat/issues"
