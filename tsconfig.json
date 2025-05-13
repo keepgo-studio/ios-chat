@@ -16,10 +16,11 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,      
     "removeComments": true,
-    "emitDeclarationOnly": true,
     "noImplicitAny": true,
     "noImplicitThis": true,
     "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
 
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
@@ -40,6 +41,7 @@
         "rules": {
           "no-unknown-tag-name": "warning",
           "no-unknown-event": "warning",
+          "no-missing-import": "off"
         }
       }
     ]
