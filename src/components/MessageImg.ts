@@ -1,4 +1,4 @@
-import LitComponent from "@/config/core";
+import LitComponent from "@/config/component";
 import type { ChatMessageContentMap } from "@/models/chat-room";
 import { html } from "lit";
 import { customElement, property } from "lit/decorators.js";

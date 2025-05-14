@@ -1,6 +1,6 @@
-import type LitComponent from "@/config/core";
+import type LitComponent from "@/config/component";
 import { AppError } from "@/config/error";
-import { Stack } from "@/lib/data";
+import { Stack } from "@/lib/data-structure";
 
 type Role = "sender" | "answer";
 
@@ -42,7 +42,7 @@ export default class ChatRoomModel {
   private _messages = new Stack<ChatMessage>();
   private _callbacks: ChatRoomCallback[] = [];
 
-  constructor(public readonly id: string, private readonly _ref: LitComponent) {
+  constructor(public readonly id: string, readonly ref: LitComponent) {
     if (!id || typeof id !== "string") {
       throw new AppError(
         "CHAT_ROOM_ID_INVALID",
@@ -50,7 +50,7 @@ export default class ChatRoomModel {
       );
     }
 
-    if (!(_ref instanceof HTMLElement)) {
+    if (!(ref instanceof HTMLElement)) {
       throw new AppError(
         "CHAT_REF_INVALID",
         "ChatRoom ref must be a valid HTMLElement"
@@ -60,8 +60,12 @@ export default class ChatRoomModel {
 
   addMessage(msg: ChatMessage) {
     this._messages.append(msg);
-    this._ref.fireEvent("controller:answer-message", msg);
     this._notify(msg);
+  }
+
+  setMessages(msgs: ChatMessage[]) {
+    this._messages.clear();
+    msgs.forEach(msg => this._messages.append(msg));
   }
 
   private _notify(msg: ChatMessage) {
@@ -76,7 +80,7 @@ export default class ChatRoomModel {
     return this._messages.toArray();
   }
 
-  addListener(callback: ChatRoomCallback) {
+  attachListener(callback: ChatRoomCallback) {
     this._callbacks.push(callback);
   }
 

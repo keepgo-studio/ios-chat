@@ -1,9 +1,10 @@
-import LitComponent from "@/config/core";
-import type { ChatMachineActorRef } from "@/chat.machine";
+import LitComponent from "@/config/component";
+import type { ChatMachineActorRef } from "@/app.machine";
 import { css, html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { throttle } from "@/lib/utils";
 import type { ChatMessageContentMap } from "@/models/chat-room";
+import { styleMap } from "lit/directives/style-map.js";
 
 import arrowSvg from "@/assets/arrow.up.circle.fill.svg";
 
@@ -18,34 +19,40 @@ class Textarea extends LitComponent {
   @state()
   showBtn = false;
 
-  setShowBtn() {
-    this.showBtn = this.elemTextarea.value.length > 0;
-  }
-
   @state()
   imgs: ChatMessageContentMap["img"][] = [];
 
-  override connectedCallback(): void {
-    super.connectedCallback();
-
-    this.actorRef.subscribe((snap) => {
-      this.blocked = snap.matches({ Render: { Input: "Blocked" } });
-
-      if (snap.matches({ Render: { Input: { Textarea: "TypeMode" } } })) {
-        this.imgs = snap.context.cachedMessageContents.filter(
-          (message) => message.type === "img"
-        );
-
-        
-      }
-    });
-  }
+  @state()
+  maxHeight = 0;
 
   @query("textarea")
   elemTextarea!: HTMLTextAreaElement;
 
+  override connected(): void {
+    this.actorRef.subscribe((snap) => {
+      this.blocked = snap.matches({ Render: { Input: "Blocked" } });
+
+      if (snap.matches({ Render: { Input: { Ready: "TypeMode" } } })) {
+        // this.imgs = snap.context.cachedMessageContents.filter(
+        //   (message) => message.type === "img"
+        // );
+      }
+
+      // sync height when App's height is chagned
+      if (snap.matches({ Render: { Coor: "Stop" }})) {
+        this.maxHeight = snap.context.appCoor.height / 2;
+        this.syncTextareaHeight();
+      }
+    });
+  }
+
+  setShowBtn() {
+    this.showBtn = this.elemTextarea.value.length > 0;
+  }
+
   syncTextareaHeight() {
     const el = this.elemTextarea;
+
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
   }
@@ -53,25 +60,29 @@ class Textarea extends LitComponent {
   sendMessage() {
     if (!this.showBtn) return;
 
-    this.actorRef.send({ type: "SEND_MESSAGE" });
+    const textContent: ChatMessageContentMap["text"] = {
+      type: "text",
+      val: this.elemTextarea.value
+    };
 
-    this.elemTextarea.value = "";
-    
+    this.actorRef.send({ 
+      type: "TEXT_ENTER",
+      textContent,
+      width: this.offsetWidth,
+      height: this.offsetHeight
+    });
+
+    // reset textarea
+    this.elemTextarea.value = "";    
     this.syncTextareaHeight();
     this.setShowBtn();
+
+    this.actorRef.send({ type: "SEND_MESSAGE" });
   }
   
   keyHandler(e: KeyboardEvent) {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey) {
       e.preventDefault();
-      
-      const textContent: ChatMessageContentMap["text"] = {
-        type: "text",
-        val: this.elemTextarea.value
-      };
-      
-      this.actorRef.send({ type: "TEXT_ENTER", textContent });
-
       this.sendMessage();
     }
   }
@@ -84,38 +95,48 @@ class Textarea extends LitComponent {
   inputHandler = throttle(() => {
     this.syncTextareaHeight();
     this.setShowBtn();
-  }, 200);
+  // duration is same at app.machine's InputCoor 'after duration(=150ms)'
+  }, 150);
 
   protected override render() {
     return html`
       <section>
-        <div class="textarea-wrapper">
-          ${this.imgs.map(
+        <div class="custom-textarea">
+          ${this.imgs.length > 0 ? this.imgs.map(
             (img) => html`
               <div class="img-wrapper">
                 <img src=${img.val.src} alt=${img.val.alt ?? ""} />
                 <button class="close-btn"></button>
               </div>
             `
-          )}
+          ) : ""}
 
-          <textarea
-            rows=${1}
-            placeholder="Chat"
-            ?disabled=${this.blocked}
-            @keypress=${this.keyHandler}
-            @focus=${this.focusHandler}
-            @input=${this.inputHandler}
-          ></textarea>
+          <div class="typing-area">
+            <textarea
+              style=${styleMap({
+                maxHeight: this.maxHeight > 0 ? `${Math.ceil(this.maxHeight)}px` : "",
+              })}
+              rows=${1}
+              placeholder="Chat"
+              ?disabled=${this.blocked}
+              @keypress=${this.keyHandler}
+              @focus=${this.focusHandler}
+              @input=${this.inputHandler}
+            ></textarea>
+          </div>
         </div>
 
-        ${this.showBtn
-          ? html`
-              <button class="submit-btn" @click=${this.sendMessage}>
-                <ios-chat-svg .data=${arrowSvg}></ios-chat-svg>
-              </button>
-            `
-          : undefined}
+        <div class="btn-wrapper">
+          <button
+            style=${styleMap({ 
+              display: this.showBtn ? "" : "none"
+            })}
+            class="submit-btn" 
+            @click=${this.sendMessage}
+          >
+            <ios-chat-svg .data=${arrowSvg}></ios-chat-svg>
+          </button>
+        </div>
       </section>
     `;
   }
@@ -123,16 +144,17 @@ class Textarea extends LitComponent {
   protected static override shadowStyles = css`
     section {
       width: 100%;
-      padding-left: 0.5em;
       position: relative;
       display: flex;
-      align-items: center;
-    }
-
-    .textarea-wrapper {
-      width: 100%;
+      align-items: flex-end;
       box-shadow: 0 0 0 2px var(--message-color);
       border-radius: var(--border-radius);
+      background-color: var(--textarea);
+    }
+    
+    .custom-textarea {
+      width: 100%;
+      flex: 1;
     }
 
     .img-wrapper {
@@ -183,18 +205,36 @@ class Textarea extends LitComponent {
       background-color: #fff;
     }
 
+    .typing-area {
+      padding: 0.6em 1em;
+    }
+    textarea::-webkit-scrollbar {
+      width:  10px;
+      height: 10px;
+    }
+
+    textarea::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar);
+      border-radius: 999px;
+      background-clip: padding-box;
+      border: 3px solid transparent;
+      cursor: pointer;
+    }
+
+    textarea::-webkit-scrollbar-track {
+      background-color: transparent;
+      border-radius: 999px;
+    }
+
     textarea {
       display: block;
       width: 100%;
-      height: 2.4em;
+      overflow-y: auto;
       font-size: inherit;
-      border-radius: var(--border-radius);
-      padding: 0.6em 2.5em 0.6em 1em;
       line-height: 1.2em;
       color: var(--theme-color);
       outline: none;
       border: none;
-      background-color: var(--textarea);
       caret-color: #1588fe;
       resize: none;
     }
@@ -202,17 +242,17 @@ class Textarea extends LitComponent {
       cursor: not-allowed;
       background-color: var(--disable);
     }
-    textarea::-webkit-scrollbar {
-      display: none;
-    }
     textarea::placeholder {
       color: var(--scrollbar);
     }
 
+    .btn-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.4em;
+    }
     .submit-btn {
-      position: absolute;
-      bottom: 0.4em;
-      right: 0.4em;
       width: 1.6em;
       aspect-ratio: 1 / 1;
       fill: var(--blue);

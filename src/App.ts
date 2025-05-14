@@ -1,21 +1,32 @@
-import LitComponent from "./config/core";
-import { chatMachine, type ChatMachineActorRef } from "@/chat.machine";
+import LitComponent from "./config/component";
+import {
+  appMachine,
+  checkAppValid,
+  type ChatMachineActorRef,
+} from "@/app.machine";
 import { css, html } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { createActor } from "xstate";
 import { appStyleVars } from "./config/style";
-import type { ChatMessage } from "./models/chat-room";
+import { parsePaddingStr, type Padding } from "./lib/style-utils";
 
+export type AppAttributeKey = "room-id" | "padding" | "mode" | "width";
+
+/**
+ * 모든 ChatController 코드는 machone(chat.machine.ts)에 넣었음
+ */
 @customElement("ios-chat")
 class App extends LitComponent {
-  @state()
-  chatRoomId: string = "";
-
   @state()
   errorMsg: string | null = null;
 
   @state()
-  chatMessages: ChatMessage[] = [];
+  screenPadding: Padding = {
+    top: "10px",
+    left: "12px",
+    right: "12px",
+    bottom: "10px",
+  };
 
   @query("ios-chat-screen")
   elemScreen!: LitComponent;
@@ -23,24 +34,14 @@ class App extends LitComponent {
   @query("ios-chat-input")
   elemInput!: LitComponent;
 
-  private _actor = createActor(
-    chatMachine.provide({
-      actions: {
-        "app:syncMessages": (_, { modelMessages }) => {
-          this.chatMessages = modelMessages;
-        },
-      },
-    })
-    // type casting for 'ts-lit-plugin' package
-  ) as ChatMachineActorRef;
+  private _actor = createActor(appMachine) as ChatMachineActorRef;
 
   private _resizeObserver?: ResizeObserver;
 
-  override connectedCallback(): void {
-    super.connectedCallback();
-
-    this._actor.subscribe((snap) => {
-      this.errorMsg = snap.context.error;
+  protected override connected(): void {
+    // init listeners
+    this.listenEvent("controller:init-message", () => {
+      this._actor.send({ type: "SYNC_MESSAGE" });
     });
 
     this.listenEvent("controller:answer-message", () => {
@@ -48,14 +49,27 @@ class App extends LitComponent {
     });
 
     this._actor.start();
-    this._actor.send({ type: "INIT", elemRef: this });
 
-    this._resizeObserver = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      this._actor.send({ type: "RESIZE", width, height });
-    });
+    try {
+      // check chat room valid
+      const info = checkAppValid(this);
 
-    this._resizeObserver.observe(this);
+      const screenPadding = this.getAttr<AppAttributeKey>("padding");
+      if (screenPadding) {
+        this.screenPadding = parsePaddingStr(screenPadding);
+      }
+
+      this._resizeObserver = new ResizeObserver((entries) => {
+        const { width, height } = entries[0].contentRect;
+        this._actor.send({ type: "RESIZE_APP", width, height });
+      });
+
+      this._resizeObserver.observe(this);
+
+      this._actor.send({ type: "CREATE_ROOM", info });
+    } catch (err) {
+      this.errorMsg = err instanceof Error ? err.message : "Chat crashed!";
+    }
   }
 
   protected override render() {
@@ -65,8 +79,8 @@ class App extends LitComponent {
           <div class="root">
             <ios-chat-attachment .actorRef=${this._actor}></ios-chat-attachment>
             <ios-chat-screen
-              .actorRef=${this._actor} 
-              .messages=${this.chatMessages}
+              .padding=${this.screenPadding}
+              .actorRef=${this._actor}
             ></ios-chat-screen>
             <ios-chat-input .actorRef=${this._actor}></ios-chat-input>
           </div>
@@ -84,24 +98,32 @@ class App extends LitComponent {
     .root {
       width: 100%;
       height: 100%;
+      display: flex;
       position: relative;
-      display: grid;
-      grid-template-rows: 1fr auto;
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
         Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
       font-size: var(--font-size);
     }
-    .ios-chat-input,
-    .ios-chat-screen {
-      display: block;
+    ios-chat-attachment {
+      position: absolute;
+    }
+    ios-chat-screen {
+      position: relative;
+      flex: 1;
+    }
+    ios-chat-input {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1; /* related with screen message z index */
     }
   `;
 
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this._actor.send({ type: "TERMINATE" });
+  override disconnected(): void {
     this._resizeObserver?.disconnect();
+    this._actor.send({ type: "TERMINATE" });
   }
 }
 

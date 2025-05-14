@@ -4,10 +4,12 @@ import ChatRoomModel, {
   type ChatRoomCallback,
 } from "@/models/chat-room";
 import { AppError } from "@/config/error";
-import type LitComponent from "@/config/core";
-import type { ChatRoomId } from "@/lib/data";
+import type LitComponent from "@/config/component";
+import type { ChatRoomId } from "@/lib/data-structure";
 
 export type MessagePayload = Omit<ChatMessage, keyof ChatMessageMeta | "role">;
+
+export type SupportChatMode = "text-only" | "normal";
 
 /**
  * ChatController는 다중 ChatRoom 인스턴스를 관리하는 싱글턴 클래스입니다.
@@ -34,7 +36,7 @@ export type MessagePayload = Omit<ChatMessage, keyof ChatMessageMeta | "role">;
 export default class ChatController {
   private static _rooms: Map<ChatRoomId, ChatRoomModel> = new Map();
 
-  static createRoom(roomId: ChatRoomId, ref: LitComponent) {
+  static createRoom(roomId: ChatRoomId, roomRef: LitComponent) {
     if (this._rooms.has(roomId)) {
       throw new AppError(
         "CHAT_ROOM_EXISTS",
@@ -42,10 +44,15 @@ export default class ChatController {
       );
     }
 
-    const room = new ChatRoomModel(roomId, ref);
+    const room = new ChatRoomModel(roomId, roomRef);
     this._rooms.set(roomId, room);
+  }
 
-    return room;
+  static initRoom(roomId: ChatRoomId, messages: ChatMessage[]) {
+    const room = this._getRoom(roomId);
+    
+    room.setMessages(messages);
+    room.ref.fireEvent("controller:init-message", messages);
   }
 
   static removeRoom(roomId: ChatRoomId) {
@@ -63,7 +70,6 @@ export default class ChatController {
     const room = this._rooms.get(roomId);
 
     if (!room) {
-      ``;
       throw new AppError(
         "CHAT_ROOM_NOT_FOUND",
         `Chat room with id ${roomId} not found`
@@ -78,7 +84,7 @@ export default class ChatController {
   }
 
   static subscribe(roomId: ChatRoomId, callback: ChatRoomCallback) {
-    this._getRoom(roomId).addListener(callback);
+    this._getRoom(roomId).attachListener(callback);
   }
 
   static unsubscribe(roomId: ChatRoomId, callback: ChatRoomCallback) {
@@ -109,5 +115,6 @@ export default class ChatController {
     };
 
     room.addMessage(msg);
+    room.ref.fireEvent("controller:answer-message", msg);
   }
 }

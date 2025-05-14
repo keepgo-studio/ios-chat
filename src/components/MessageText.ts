@@ -1,6 +1,6 @@
-import LitComponent from "@/config/core";
+import LitComponent from "@/config/component";
 import type { ChatMessageContentMap } from "@/models/chat-room";
-import { html } from "lit";
+import { css, CSSResult, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
 @customElement("ios-chat-message-text")
@@ -10,9 +10,19 @@ class MessageText extends LitComponent {
 
   protected override render() {
     return html`
-      <div class="message"></div>
+      <p>${this.val}</p>
     `;
   }
+
+  protected static override shadowStyles: CSSResult = css`
+    p {
+      padding: 0.6em 1em;
+      line-height: 1.2em;
+      width: fit-content;
+      white-space: pre-line;
+      user-select: text;
+    }
+  `;
 }
 
 declare global {

@@ -1,5 +1,5 @@
-import type { ChatMachineActorRef } from "@/chat.machine";
-import LitComponent from "@/config/core";
+import type { ChatMachineActorRef } from "@/app.machine";
+import LitComponent from "@/config/component";
 import { css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
@@ -14,9 +14,10 @@ class Attachment extends LitComponent {
   @state()
   isOpen = false;
 
-  override connectedCallback(): void {
-    super.connectedCallback();
+  @state()
+  blocked = false;
 
+  override connected(): void {
     this.actorRef.subscribe(snap => {
       if (snap.matches({ Render: { Attachment: "Disabled" }})) {
         this.disabled = true;
@@ -26,11 +27,12 @@ class Attachment extends LitComponent {
       if (snap.matches({ Render: { Attachment: "Open" }})) {
         this.isOpen = true;
       } else if (
-        snap.matches({ Render: { Attachment: "Closed" }}) ||
-        snap.matches({ Render: { Attachment: "Blocked" }})
+        snap.matches({ Render: { Attachment: "Closed" }})
       ) {
         this.isOpen = false;
       }
+
+      this.blocked = snap.matches({ Render: { Attachment: "Blocked" }});
     })
   }
 
@@ -42,7 +44,8 @@ class Attachment extends LitComponent {
     `;
   }
 
-  protected static override shadowStyles = css``;
+  protected static override shadowStyles = css`
+  `;
 }
 
 declare global {

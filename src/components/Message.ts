@@ -1,13 +1,10 @@
-import LitComponent from "@/config/core";
+import LitComponent from "@/config/component";
 import type { ChatMessage, ChatMessageContent } from "@/models/chat-room";
 import { css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
 @customElement("ios-chat-message")
 class Message extends LitComponent {
-  @property({ type: Boolean })
-  isLast = false;
-
   @property({ attribute: false })
   message?: ChatMessage;
 
@@ -30,15 +27,22 @@ class Message extends LitComponent {
     return html`
       <div class="message">
         <ul>
-          ${this.message.contents.map(content => this.renderContent(content))}
+          ${this.message.contents.map((content) => this.renderContent(content))}
         </ul>
-        ${this.isLast ? html`<div class="tail"></div>` : undefined}
       </div>
     `;
   }
 
   protected static override shadowStyles = css`
-  
+    :host {
+      display: block;
+      width: fit-content;
+      border-radius: inherit;
+    }
+    .message {
+      border-radius: inherit;
+      word-break: break-all;
+    }
   `;
 }
 

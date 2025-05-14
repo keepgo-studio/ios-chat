@@ -12,21 +12,28 @@ export const globalStyles = css`
     background: none;
     border: none;
   }
+
+  li {
+    display: block;
+  }
 `;
 
 export const appStyleVars = css`
   :host {
-    --theme-bg: #fff;
-    --theme-color: #000;
-    --message-color: #e9e9eb;
-    --chat-input-bg: rgba(255, 255, 255, 0.7);
+    --ease-out-back: cubic-bezier(0.34, 1.36, 0.44, 1);
+    --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+
     --font-size: clamp(6px, 3.2vw, 15px);
     --border-radius: 20px;
     --input-bg: rgba(10, 10, 10, 0.75);
     --red: rgba(255, 69, 58);
     --blue: #39a7fc;
+
+    --theme-bg: #fff;
+    --theme-color: #000;
+    --message-color: #e9e9eb;
+    --chat-input-bg: rgba(255, 255, 255, 0.7);
     --disable: #d5d5d5;
-    --ease-out-back: cubic-bezier(0.34, 1.36, 0.44, 1);
     --textarea: rgba(255, 255, 255, 0.9);
     --scrollbar: #a5a5a5;
     --wave-fill: #000;

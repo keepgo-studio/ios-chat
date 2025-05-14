@@ -11,6 +11,22 @@ export default class LitComponent extends LitElement {
     return [globalStyles, this.shadowStyles];
   }
 
+  protected connected() {};
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.connected();
+  }
+
+  protected disconnected() {};
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.disconnected();
+  }
+
+  getAttr<T extends string>(key: T) {
+    return this.getAttribute(key);
+  }
+
   fireEvent<K extends keyof CustomEventDetailMap>(
     ...args: CustomEventDetailMap[K] extends undefined
       ? [type: K, options?: EventInit]

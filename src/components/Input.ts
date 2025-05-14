@@ -1,5 +1,5 @@
-import LitComponent from "@/config/core";
-import type { ChatMachineActorRef } from "@/chat.machine";
+import LitComponent from "@/config/component";
+import type { ChatMachineActorRef } from "@/app.machine";
 import { css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
@@ -9,7 +9,7 @@ class Input extends LitComponent {
   actorRef!: ChatMachineActorRef;
 
   @state()
-  isAttachmentOn = false;
+  isAttachmentOff = false;
 
   @state()
   openAttachment = false;
@@ -20,13 +20,15 @@ class Input extends LitComponent {
   @state()
   appWidth = 0;
 
-  override connectedCallback(): void {
-    super.connectedCallback();
+  private _resizeObserver?: ResizeObserver;
 
+  override connected(): void {
     const snapshot = this.actorRef.getSnapshot();
   
-    this.isAttachmentOn = !snapshot.matches({ Render: { Attachment: "Blocked" } });
+    // check is attachment is available at first
+    this.isAttachmentOff = snapshot.matches({ Render: { Attachment: "Disabled" } });
 
+    // sync open attachment
     if (snapshot.matches({ Render: { Attachment: "Open" }})) {
       this.openAttachment = true;
     } else if (snapshot.matches({ Render: { Attachment: "Closed" }})) {
@@ -39,6 +41,14 @@ class Input extends LitComponent {
         this.appHeight = snap.context.appCoor.height;
       }
     });
+
+    // sync input coor
+    this._resizeObserver = new ResizeObserver((entries) => {
+      const { height } = entries[0].contentRect;;
+      this.actorRef.send({ type: "RESIZE_INPUT", height });
+    });
+    
+    this._resizeObserver.observe(this);
   }
 
   toggleHandler(e: CustomEventMap["fire-toggle"]) {
@@ -54,7 +64,7 @@ class Input extends LitComponent {
   protected override render(): unknown {
     return html`
       <section>
-        ${this.isAttachmentOn
+        ${!this.isAttachmentOff
           ? html`
               <ios-chat-toggle
                 .open=${this.openAttachment}
@@ -76,7 +86,8 @@ class Input extends LitComponent {
       width: 100%;
       display: flex;
       align-items: flex-end;
-      padding: 10px 16px;
+      padding: 0.625em 1em;
+      gap: .5em;
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       background-color: var(--chat-input-bg);
@@ -86,6 +97,10 @@ class Input extends LitComponent {
       flex: 1;
     }
   `;
+
+  protected override disconnected(): void {
+    this._resizeObserver?.disconnect();
+  }
 }
 
 declare global {

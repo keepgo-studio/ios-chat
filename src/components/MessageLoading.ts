@@ -1,4 +1,4 @@
-import LitComponent from "@/config/core";
+import LitComponent from "@/config/component";
 import { html } from "lit";
 import { customElement } from "lit/decorators.js";
 

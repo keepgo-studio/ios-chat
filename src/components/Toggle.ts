@@ -1,4 +1,4 @@
-import LitComponent from "@/config/core";
+import LitComponent from "@/config/component";
 import { css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import {styleMap} from 'lit/directives/style-map.js';

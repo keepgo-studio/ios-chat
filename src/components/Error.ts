@@ -1,11 +1,17 @@
-import LitComponent from "@/config/core";
-import { html } from "lit";
+import LitComponent from "@/config/component";
+import { html, type PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
 @customElement("ios-chat-error")
 class AppError extends LitComponent {
   @property()
   msg: string | null = null;
+
+  protected override updated(_changedProperties: PropertyValues): void {
+    if (_changedProperties.has("msg")) {
+      console.error(this.msg);
+    }
+  }
 
   protected override render() {
     if (!this.msg) return;
