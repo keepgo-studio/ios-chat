@@ -7,6 +7,7 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { styleMap } from "lit/directives/style-map.js";
 import type { Padding } from "@/lib/style-utils";
+import type { ScrollPosition } from "./Scroll";
 
 const MESSAGE_WIDTH_RATIO = 0.75;
 
@@ -86,9 +87,9 @@ class Screen extends LitComponent {
     }
   }
 
-  scrollToBottom(smooth?: boolean) {
-    this.scrollElem.fireEvent("scroll-to", {
-      to: "bottom",
+  scrollAt(to: ScrollPosition, smooth?: boolean) {
+    this.scrollElem.fireEvent("scroll-at", {
+      to,
       smooth
     });
   }
@@ -109,15 +110,16 @@ class Screen extends LitComponent {
     const inputPaddingY = inputCoor.height - textareaCoor.height;
     const messageMaxWidth = pxToNumber(ulCStyle.width) - pxToNumber(ulCStyle.paddingLeft) - pxToNumber(ulCStyle.paddingRight);
 
-    const top = Math.max(gapBetweenInputTopFromLi, 0) + inputPaddingY / 2;
+    const y = Math.max(gapBetweenInputTopFromLi, 0) + inputPaddingY / 2;
 
     // before painting list of ios-chat-message
     const beforeAnimate = () => {
       li.style.maxWidth = "none";
-      li.style.zIndex = "10";
+      li.style.zIndex = isSender ? "99" : "";
+
       li.style.background = "var(--textarea)";
       li.style.width = isSender ? `${textareaCoor.width}px` : "";
-      li.style.top = `${top}px`;
+      li.style.transform = `translateY(${y}px)`;
     }
 
     // ⭐️ after painting list of ios-chat-message
@@ -126,22 +128,26 @@ class Screen extends LitComponent {
       // style variables
       const actualMessageWidth = messageElem.offsetWidth + 1; // +1px for prevent breaking line
       const messageWidth = Math.min(actualMessageWidth, messageMaxWidth * MESSAGE_WIDTH_RATIO);
+
       li.style.transition = `var(--ease-out-quart) ${duration}ms, background ease 500ms`;
 
       li.style.background = isSender ? "var(--blue)" : "var(--message-color)";
       li.style.width = `${messageWidth}px`;
-      li.style.top = `0px`;
+      li.style.transform = `translateY(0px)`;
 
-      this.scrollToBottom(true);
+      this.scrollAt("bottom", true);
     }
 
     // after animation
     const afterAnimate = () => {
       li.style.maxWidth = "";
       li.style.zIndex = "";
+
+      li.style.transition = "";
+
       li.style.background = "";
       li.style.width = "";
-      li.style.top = "";
+      li.style.transform = "";
     }
 
     beforeAnimate();
@@ -159,7 +165,7 @@ class Screen extends LitComponent {
 
     // scroll to bottom only if inputHeight acutal changed
     if (_changedProperties.has("inputHeight") && this.inputHeight > 0) {
-      this.scrollToBottom(this.animateOn);
+      this.scrollAt("bottom", this.animateOn);
     }
   }
 
@@ -206,6 +212,7 @@ class Screen extends LitComponent {
       width: 100%;
       transition: ease 250ms opacity;
     }
+
     li {
       position: relative;
       width: fit-content;

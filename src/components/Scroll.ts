@@ -22,47 +22,47 @@ class Scroll extends LitComponent {
   slotElem!: HTMLSlotElement;
 
   @state()
-  currentTop = 0;
+  currentY = 0;
 
   private _resizeObserver?: ResizeObserver;
   /**
-   * The minimum top value, fixed at 0.
+   * The minimum y value, fixed at 0.
    */
-  private _minTop = 0;
+  private _minY = 0;
   /**
-   * The maximum top value which is positive number.
+   * The maximum y value which is positive number.
    *
    * This value is constrained within the range:
-   * @example 0 <= maxTop <= (rootHeight - wrapperHeight)
+   * @example 0 <= maxY <= (rootHeight - wrapperHeight)
    */
-  private _maxTop = 0;
-  private rootHeight = 0;
-  private cancelMoving: (() => void) | null = null;
-  private mc: MouseCoor = new MouseCoor();
+  private _maxY = 0;
+  private _rootHeight = 0;
+  private _cancelMoving: (() => void) | null = null;
+  private _mouseCoor: MouseCoor = new MouseCoor();
 
   protected override connected(): void {
-    this.listenEvent("scroll-to", (detail) => {
+    this.listenEvent("scroll-at", (detail) => {
       const { to, smooth } = detail;
 
-      this.setMaxTopFor("scroll-to");
+      this.setMaxYFor("scroll-at");
 
       switch (to) {
         case "top":
-          return this.moveTo(this._minTop, smooth);
+          return this.moveTo(this._minY, smooth);
         case "bottom":
-          return this.moveTo(-1 * this._maxTop, smooth);
+          return this.moveTo(-1 * this._maxY, smooth);
       }
     });
   }
 
   // sync slot height when specific events fired
-  setMaxTopFor(eType: "mousedown" | "scroll-to" | "wheel") {
-    if (eType === "mousedown" || eType === "scroll-to") {
+  setMaxYFor(eType: "mousedown" | "scroll-at" | "wheel") {
+    if (eType === "mousedown" || eType === "scroll-at") {
       this.wrapperElem.style.transition = "";
     }
 
-    this.rootHeight = this.rootElem.offsetHeight;
-    this._maxTop = Math.max(this.wrapperElem.offsetHeight - this.rootHeight, 0);
+    this._rootHeight = this.rootElem.offsetHeight;
+    this._maxY = Math.max(this.wrapperElem.offsetHeight - this._rootHeight, 0);
   }
 
   moveTo(
@@ -74,10 +74,10 @@ class Scroll extends LitComponent {
       if (smoothType === "spring") {
         const { run, cancelMoving } = springTo(
           (t) => {
-            this.currentTop = fixedToThirdDecimal(t);
+            this.currentY = fixedToThirdDecimal(t);
           },
           {
-            from: this.currentTop,
+            from: this.currentY,
             dest,
             duration: 1500,
             stiffness: 250,
@@ -86,54 +86,54 @@ class Scroll extends LitComponent {
           }
         );
 
-        this.cancelMoving = cancelMoving;
+        this._cancelMoving = cancelMoving;
         run();
       } else {
         const { run, cancelMoving } = easeTo(
           (t) => {
-            this.currentTop = fixedToThirdDecimal(t);
+            this.currentY = fixedToThirdDecimal(t);
           },
-          { from: this.currentTop, dest, duration: 1000 }
+          { from: this.currentY, dest, duration: 1000 }
         );
 
-        this.cancelMoving = cancelMoving;
+        this._cancelMoving = cancelMoving;
         run();
       }
     }
 
-    this.currentTop = dest;
+    this.currentY = dest;
   }
 
   @eventOptions({ passive: true })
   wheelHandler(e: WheelEvent) {
-    if (this.cancelMoving) this.cancelMoving();
+    if (this._cancelMoving) this._cancelMoving();
 
     // give smooth scrolling for wheel event
     this.wrapperElem.style.transition = "var(--ease-out-quart) 400ms transform";
 
-    const actualDest = this.currentTop + this.direction * -e.deltaY;
-    const dest = clamp(actualDest, -1 * this._maxTop, this._minTop);
+    const actualDest = this.currentY + this.direction * -e.deltaY;
+    const dest = clamp(actualDest, -1 * this._maxY, this._minY);
 
     this.moveTo(dest);
   }
 
   mousedownHandler(e: MouseEvent) {
-    if (this.cancelMoving) this.cancelMoving();
+    if (this._cancelMoving) this._cancelMoving();
 
-    this.setMaxTopFor("mousedown");
+    this.setMaxYFor("mousedown");
 
-    this.mc.startDrag(e.clientX, e.clientY);
+    this._mouseCoor.startDrag(e.clientX, e.clientY);
   }
 
   mousemoveHandler(e: MouseEvent) {
-    if (!this.mc.isDragging()) return;
-    this.currentTop += this.direction * e.movementY;
+    if (!this._mouseCoor.isDragging()) return;
+    this.currentY += this.direction * e.movementY;
   }
 
   mouseDetachHandler(e: MouseEvent) {
-    if (!this.mc.isDragging()) return;
+    if (!this._mouseCoor.isDragging()) return;
 
-    const v = this.mc.endDragging(e.clientX, e.clientY, "ver");
+    const v = this._mouseCoor.endDragging(e.clientX, e.clientY, "ver");
     const downScaleV = fixedToThirdDecimal(0.5 * v);
     /**
      * This ternary operator for UX improvment
@@ -145,17 +145,17 @@ class Scroll extends LitComponent {
      */
     const step =
       Math.abs(v) > 5
-        ? this._maxTop * 0.9
+        ? this._maxY * 0.9
         : Math.abs(v) > 1
-        ? this.rootHeight
+        ? this._rootHeight
         : 0;
 
-    const actualDest = this.currentTop + this.direction * step * downScaleV;
-    const dest = clamp(actualDest, -1 * this._maxTop, this._minTop);
+    const actualDest = this.currentY + this.direction * step * downScaleV;
+    const dest = clamp(actualDest, -1 * this._maxY, this._minY);
 
     // If the destination is out of bounds,
     // use a spring animation for a more elastic effect.
-    if (actualDest < -this._maxTop || this._minTop < actualDest) {
+    if (actualDest < -this._maxY || this._minY < actualDest) {
       this.moveTo(dest, true, "spring");
       return;
     }
@@ -175,7 +175,7 @@ class Scroll extends LitComponent {
         @mouseup=${this.mouseDetachHandler}
         @mouseleave=${this.mouseDetachHandler}
       >
-        <div class="wrapper" style=${styleMap({ transform: `translateY(${this.currentTop}px)` })}>
+        <div class="wrapper" style=${styleMap({ transform: `translateY(${this.currentY}px)` })}>
           <slot></slot>
         </div>
       </div>
@@ -193,7 +193,6 @@ class Scroll extends LitComponent {
       cursor: grabbing;
     }
     .wrapper {
-      position: relative;
       height: fit-content;
     }
   `;

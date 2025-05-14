@@ -7,7 +7,7 @@ type InitMessage = ChatMessage[];
 
 type Toggle = boolean;
 
-type ScrollTo = {
+type ScrollAt = {
   to: ScrollPosition,
   smooth?: boolean;
 };
@@ -17,7 +17,7 @@ declare global {
     "controller:answer-message": AnswerMessage;
     "controller:init-message": InitMessage;
     "fire-toggle": Toggle;
-    "scroll-to": ScrollTo;
+    "scroll-at": ScrollAt;
   }
 
   /**
