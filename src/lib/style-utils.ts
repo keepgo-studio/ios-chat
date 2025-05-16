@@ -70,7 +70,7 @@ export function parsePaddingStr(padding: string): Padding {
 
   for (const value of values) {
     if (!VALID_PADDING_REGEX.test(value)) {
-      throw new Error(`Invalid padding unit: "${value}"`);
+      throw new Error(`Invalid padding unit: "${value}". Allowed units are px, em, rem, %, vw, vh`);
     }
   }
 
@@ -107,4 +107,16 @@ export function parsePaddingStr(padding: string): Padding {
     default:
       throw new Error(`Unexpected padding format: "${padding}"`);
   }
+}
+
+export function parseFontSizeStr(str: string): string | null {
+  const trimmed = str.trim();
+
+  const VALID_FONT_SIZE_REGEX = /^(inherit|\d*\.?\d+(px|em|rem))$/;
+
+  if (!VALID_FONT_SIZE_REGEX.test(trimmed)) {
+    throw new Error(`Invalid font-size value: "${str}". Allowed units are px, em, rem, and inherit.`);
+  }
+
+  return trimmed;
 }

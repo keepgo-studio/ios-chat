@@ -26,7 +26,7 @@ class Textarea extends LitComponent {
   maxHeight = 0;
 
   @query("textarea")
-  elemTextarea!: HTMLTextAreaElement;
+  textareaElem!: HTMLTextAreaElement;
 
   override connected(): void {
     this.actorRef.subscribe((snap) => {
@@ -47,11 +47,11 @@ class Textarea extends LitComponent {
   }
 
   setShowBtn() {
-    this.showBtn = this.elemTextarea.value.length > 0;
+    this.showBtn = this.textareaElem.value.length > 0;
   }
 
   syncTextareaHeight() {
-    const el = this.elemTextarea;
+    const el = this.textareaElem;
 
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
@@ -62,7 +62,7 @@ class Textarea extends LitComponent {
 
     const textContent: ChatMessageContentMap["text"] = {
       type: "text",
-      val: this.elemTextarea.value
+      val: this.textareaElem.value
     };
 
     this.actorRef.send({ 
@@ -73,11 +73,12 @@ class Textarea extends LitComponent {
     });
 
     // reset textarea
-    this.elemTextarea.value = "";    
+    this.textareaElem.value = "";    
     this.syncTextareaHeight();
     this.setShowBtn();
 
     this.actorRef.send({ type: "SEND_MESSAGE" });
+    this.textareaElem.focus();
   }
   
   keyHandler(e: KeyboardEvent) {
@@ -92,7 +93,13 @@ class Textarea extends LitComponent {
     this.setShowBtn();
   }
 
-  inputHandler = throttle(() => {
+  inputHandler = throttle((e: InputEvent) => {
+    const value = (e.target as HTMLTextAreaElement).value;
+    if (value.length > 0) {
+      this.actorRef.send({ type: "TEXT_INPUT" });
+    } else {
+      this.actorRef.send({ type: "TEXT_RESET" });
+    }
     this.syncTextareaHeight();
     this.setShowBtn();
   // duration is same at app.machine's InputCoor 'after duration(=150ms)'
@@ -111,17 +118,20 @@ class Textarea extends LitComponent {
             `
           ) : ""}
 
-          <div class="typing-area">
+          <div 
+            class="typing-area"
+            style=${styleMap({
+              maxHeight: this.maxHeight > 0 ? `${Math.ceil(this.maxHeight)}px` : "",
+            })}
+          >
             <textarea
-              style=${styleMap({
-                maxHeight: this.maxHeight > 0 ? `${Math.ceil(this.maxHeight)}px` : "",
-              })}
               rows=${1}
               placeholder="Chat"
               ?disabled=${this.blocked}
               @keypress=${this.keyHandler}
               @focus=${this.focusHandler}
               @input=${this.inputHandler}
+              autofocus
             ></textarea>
           </div>
         </div>
@@ -131,7 +141,7 @@ class Textarea extends LitComponent {
             style=${styleMap({ 
               display: this.showBtn ? "" : "none"
             })}
-            class="submit-btn" 
+            class="submit-btn"
             @click=${this.sendMessage}
           >
             <ios-chat-svg .data=${arrowSvg}></ios-chat-svg>
@@ -150,6 +160,7 @@ class Textarea extends LitComponent {
       box-shadow: 0 0 0 2px var(--message-color);
       border-radius: var(--border-radius);
       background-color: var(--textarea);
+      overflow: hidden;
     }
     
     .custom-textarea {
@@ -206,30 +217,14 @@ class Textarea extends LitComponent {
     }
 
     .typing-area {
-      padding: 0.6em 1em;
-    }
-    textarea::-webkit-scrollbar {
-      width:  10px;
-      height: 10px;
-    }
-
-    textarea::-webkit-scrollbar-thumb {
-      background-color: var(--scrollbar);
-      border-radius: 999px;
-      background-clip: padding-box;
-      border: 3px solid transparent;
-      cursor: pointer;
-    }
-
-    textarea::-webkit-scrollbar-track {
-      background-color: transparent;
-      border-radius: 999px;
-    }
-
-    textarea {
-      display: block;
-      width: 100%;
       overflow-y: auto;
+    }
+    
+    textarea {
+      padding: 0.6em 1em;
+      display: block;
+      overflow: hidden;
+      width: 100%;
       font-size: inherit;
       line-height: 1.2em;
       color: var(--theme-color);

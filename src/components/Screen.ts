@@ -7,7 +7,6 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { styleMap } from "lit/directives/style-map.js";
 import type { Padding } from "@/lib/style-utils";
-import type { ScrollPosition } from "./Scroll";
 
 const MESSAGE_WIDTH_RATIO = 0.75;
 
@@ -16,23 +15,29 @@ class Screen extends LitComponent {
   @property({ attribute: false })
   actorRef!: ChatMachineActorRef;
 
-  @state()
-  messages: ChatMessage[] = [];
-
-  @state()
+  @property({ type: Object })
   padding?: Padding;
 
   @state()
-  inputHeight = 0;
+  _messages: ChatMessage[] = [];
 
   @state()
-  senderLastIdx = -1;
+  _inputHeight = 0;
 
   @state()
-  answerLastIdx = -1;
+  _senderLastIdx = -1;
 
   @state()
-  animateOn = false;
+  _answerLastIdx = -1;
+
+  @state()
+  _animate = false;
+
+  @state()
+  _isTyping = false;
+
+  @state()
+  _isBottom = false;
 
   @query("ios-chat-scroll")
   scrollElem!: LitComponent;
@@ -43,68 +48,92 @@ class Screen extends LitComponent {
   @query("ul li:last-child")
   lastMessageElem?: HTMLLIElement;
 
+  @query("ios-chat-scroll > div")
+  bottomElem!: HTMLElement;
+
+  private _io?: IntersectionObserver;
+
   override connected(): void {
     this.actorRef.subscribe((snap) => {
-      if (snap.matches({ Render: { Screen: "Sync" }})) {
-        this.animateOn = false;
-        this.messages = snap.context.messages;
+      if (snap.matches({ Render: { Screen: { Ready: "Animating" } }})) {
+        this._animate = true;
+        this._messages = snap.context.messages;
       }
-      
-      if (snap.matches({ Render: { Screen: "Animate" }})) {
-        this.animateOn = true;
-        this.messages = snap.context.messages;
+
+      if (snap.matches({ Render: { Screen: { Ready: "Painting" } }})) {
+        this._animate = false;
+        this._messages = snap.context.messages;
       }
 
       // Update input height after 'ios-chat-input' tag's resizing is complete
       if (snap.matches({ Render: { InputCoor: "Stop" }})) {
-        this.inputHeight = snap.context.inputCoor.height;
+        this._inputHeight = snap.context.inputCoor.height;
+      }
+
+      if (snap.matches({ Render: { Input: { Ready: { TypeMode: "Typing" }}}})) {
+        this._isTyping = true;
+      } else if (snap.matches({ Render: { Input: { Ready: { TypeMode: "Idle" }}}})) {
+        this._isTyping = false;
       }
     });
   }
 
   protected override willUpdate(_changedProperties: PropertyValues): void {
-    if (_changedProperties.has("messages")) {
-      this.senderLastIdx = -1;
-      this.answerLastIdx = -1;
+    if (_changedProperties.has("_messages")) {
+      this._senderLastIdx = -1;
+      this._answerLastIdx = -1;
 
-      const n = this.messages.length;
+      const n = this._messages.length;
 
       for (let idx = n - 1; idx >= 0; idx--) {
-        const message = this.messages[idx];
+        const message = this._messages[idx];
 
-        if (this.senderLastIdx === -1 && message.role === "sender") {
-          this.senderLastIdx = idx;
+        if (this._senderLastIdx === -1 && message.role === "sender") {
+          this._senderLastIdx = idx;
         }
 
-        if (this.answerLastIdx === -1 && message.role === "answer") {
-          this.answerLastIdx = idx;
+        if (this._answerLastIdx === -1 && message.role === "answer") {
+          this._answerLastIdx = idx;
         }
 
-        if (this.senderLastIdx !== -1 && this.answerLastIdx !== -1) {
+        if (this._senderLastIdx !== -1 && this._answerLastIdx !== -1) {
           break;
         }
       }
     }
   }
 
-  scrollAt(to: ScrollPosition, smooth?: boolean) {
-    this.scrollElem.fireEvent("scroll-at", {
-      to,
-      smooth
+  protected override firstUpdated(): void {
+    this._io = new IntersectionObserver((entries) => {
+      this._isBottom = entries[0].isIntersecting;
+    }, {
+      threshold: 1
     });
+
+    this._io?.observe(this.bottomElem);
+  }
+
+  protected override updated(_changedProperties: PropertyValues): void {
+    if (
+      _changedProperties.has("_messages") && 
+      this._messages.length > 0 &&
+      this._animate
+    ) {
+      this.renderRecent();
+    }
   }
 
   async renderRecent() {
     if (!this.lastMessageElem) return;
 
     const { textareaCoor, inputCoor } = this.actorRef.getSnapshot().context;
-    const recentMessage = this.messages[this.messages.length - 1];
+    const recentMessage = this._messages[this._messages.length - 1];
     const li = this.lastMessageElem;
     const isSender = recentMessage.role === "sender";
     const messageElem = li.querySelector("ios-chat-message")!;
     const ulCStyle = window.getComputedStyle(this.ulElem);
     // style variables
-    const duration = 400;
+    const duration = 350;
     const actualScreenHeight = this.offsetHeight - inputCoor.height;
     const gapBetweenInputTopFromLi = actualScreenHeight - li.offsetTop;
     const inputPaddingY = inputCoor.height - textareaCoor.height;
@@ -112,39 +141,40 @@ class Screen extends LitComponent {
 
     const y = Math.max(gapBetweenInputTopFromLi, 0) + inputPaddingY / 2;
 
-    // before painting list of ios-chat-message
+    // before painting recent ios-chat-message
     const beforeAnimate = () => {
       li.style.maxWidth = "none";
-      li.style.zIndex = isSender ? "99" : "";
 
+      li.style.zIndex = isSender ? "99" : "";
+      li.style.color = "var(--theme-color)";
       li.style.background = "var(--textarea)";
       li.style.width = isSender ? `${textareaCoor.width}px` : "";
       li.style.transform = `translateY(${y}px)`;
     }
 
-    // ⭐️ after painting list of ios-chat-message
+    // ⭐️ after painting recent ios-chat-message
     // animate li and scroll to bottom
     const animate = () => {
       // style variables
       const actualMessageWidth = messageElem.offsetWidth + 1; // +1px for prevent breaking line
       const messageWidth = Math.min(actualMessageWidth, messageMaxWidth * MESSAGE_WIDTH_RATIO);
 
-      li.style.transition = `var(--ease-out-quart) ${duration}ms, background ease 500ms`;
+      li.style.transition = `var(--ease-out-quart) ${duration}ms`;
 
+      li.style.color = isSender ? "#fff" : "";
       li.style.background = isSender ? "var(--blue)" : "var(--message-color)";
       li.style.width = `${messageWidth}px`;
       li.style.transform = `translateY(0px)`;
-
-      this.scrollAt("bottom", true);
     }
 
     // after animation
     const afterAnimate = () => {
       li.style.maxWidth = "";
-      li.style.zIndex = "";
 
       li.style.transition = "";
 
+      li.style.zIndex = "";
+      li.style.color = "";
       li.style.background = "";
       li.style.width = "";
       li.style.transform = "";
@@ -157,36 +187,26 @@ class Screen extends LitComponent {
     afterAnimate();
   }
 
-  protected override updated(_changedProperties: PropertyValues): void {
-    // don't aniamte at first render
-    if (this.animateOn && _changedProperties.has("messages")) {
-      this.renderRecent();
-    }
-
-    // scroll to bottom only if inputHeight acutal changed
-    if (_changedProperties.has("inputHeight") && this.inputHeight > 0) {
-      this.scrollAt("bottom", this.animateOn);
-    }
-  }
-
   protected override render() {
     const isLast = (idx: number) => {
-      return this.senderLastIdx === idx || this.answerLastIdx === idx;
+      return this._senderLastIdx === idx || this._answerLastIdx === idx;
     };
 
     return html`
-      <ios-chat-scroll>
+      <ios-chat-scroll
+        .blockAutoScroll=${this._isTyping && !this._isBottom}
+        .scrollBehavior=${this._animate ? "smooth" : "auto"}
+      >
         <ul 
           style=${styleMap({
-            opacity: this.inputHeight > 0 ? "1" : "0",
             paddingTop: this.padding?.top,
             paddingLeft: this.padding?.left,
             paddingRight: this.padding?.right,
-            paddingBottom: `calc(${this.padding?.bottom} + ${this.inputHeight}px)`
+            paddingBottom: `calc(${this.padding?.bottom} + ${this._inputHeight}px)`
           })}
         >
           ${repeat(
-            this.messages,
+            this._messages,
             (message) => message.id,
             (message, idx) => html`
               <li class=${message.role}>
@@ -198,6 +218,7 @@ class Screen extends LitComponent {
             `
           )}
         </ul>
+        <div style=${styleMap({ transform: `translateY(${-this._inputHeight}px)`})}></div>
       </ios-chat-scroll>
     `;
   }
@@ -210,7 +231,6 @@ class Screen extends LitComponent {
       gap: .125em;
       height: 100%;
       width: 100%;
-      transition: ease 250ms opacity;
     }
 
     li {

@@ -8,9 +8,10 @@ import { css, html } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { createActor } from "xstate";
 import { appStyleVars } from "./config/style";
-import { parsePaddingStr, type Padding } from "./lib/style-utils";
+import { parseFontSizeStr, parsePaddingStr, type Padding } from "./lib/style-utils";
+import { styleMap } from "lit/directives/style-map.js";
 
-export type AppAttributeKey = "room-id" | "padding" | "mode" | "width";
+export type AppAttributeKey = "room-id" | "padding" | "mode" | "font-size";
 
 /**
  * 모든 ChatController 코드는 machone(chat.machine.ts)에 넣었음
@@ -18,10 +19,14 @@ export type AppAttributeKey = "room-id" | "padding" | "mode" | "width";
 @customElement("ios-chat")
 class App extends LitComponent {
   @state()
-  errorMsg: string | null = null;
+  _errorMsg: string | null = null;
 
   @state()
-  screenPadding: Padding = {
+  _fontSize: string | null = null
+  private _customFontSize: string | null = null
+
+  @state()
+  _customScreenPadding: Padding = {
     top: "10px",
     left: "12px",
     right: "12px",
@@ -29,10 +34,10 @@ class App extends LitComponent {
   };
 
   @query("ios-chat-screen")
-  elemScreen!: LitComponent;
+  screenElem!: LitComponent;
 
   @query("ios-chat-input")
-  elemInput!: LitComponent;
+  inputElem!: LitComponent;
 
   private _actor = createActor(appMachine) as ChatMachineActorRef;
 
@@ -56,30 +61,45 @@ class App extends LitComponent {
 
       const screenPadding = this.getAttr<AppAttributeKey>("padding");
       if (screenPadding) {
-        this.screenPadding = parsePaddingStr(screenPadding);
+        this._customScreenPadding = parsePaddingStr(screenPadding);
+      }
+
+      const fontSize = this.getAttr<AppAttributeKey>("font-size");
+      if (fontSize) {
+        this._customFontSize = parseFontSizeStr(fontSize);
       }
 
       this._resizeObserver = new ResizeObserver((entries) => {
         const { width, height } = entries[0].contentRect;
         this._actor.send({ type: "RESIZE_APP", width, height });
+        this.setFont();
       });
 
       this._resizeObserver.observe(this);
 
       this._actor.send({ type: "CREATE_ROOM", info });
     } catch (err) {
-      this.errorMsg = err instanceof Error ? err.message : "Chat crashed!";
+      this._errorMsg = err instanceof Error ? err.message : "Chat crashed!";
+    }
+  }
+  
+  setFont() {
+    if (this._customFontSize === null) {
+      // 360 / 22.5 = 16px, based width is 360px;
+      this._fontSize = `${this._actor.getSnapshot().context.appCoor.width / 22.5}px`;
+    } else {
+      this._fontSize = this._customFontSize;
     }
   }
 
   protected override render() {
-    return this.errorMsg
-      ? html` <ios-chat-error .msg=${this.errorMsg}></ios-chat-error> `
+    return this._errorMsg
+      ? html` <ios-chat-error .msg=${this._errorMsg}></ios-chat-error> `
       : html`
-          <div class="root">
+          <div class="root" style=${styleMap({ fontSize: this._fontSize })}>
             <ios-chat-attachment .actorRef=${this._actor}></ios-chat-attachment>
             <ios-chat-screen
-              .padding=${this.screenPadding}
+              .padding=${this._customScreenPadding}
               .actorRef=${this._actor}
             ></ios-chat-screen>
             <ios-chat-input .actorRef=${this._actor}></ios-chat-input>
@@ -103,13 +123,11 @@ class App extends LitComponent {
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
         Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-      font-size: var(--font-size);
     }
     ios-chat-attachment {
       position: absolute;
     }
     ios-chat-screen {
-      position: relative;
       flex: 1;
     }
     ios-chat-input {
@@ -117,7 +135,6 @@ class App extends LitComponent {
       left: 0;
       right: 0;
       bottom: 0;
-      z-index: 1; /* related with screen message z index */
     }
   `;
 

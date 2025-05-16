@@ -177,7 +177,7 @@ export function springTo(
     const animate = () => {
       if (!lifeCycle) return res(false);
 
-      const elapsed = (Date.now() - start) / duration; // 초 단위로 변환
+      const elapsed = fixedToThirdDecimal((Date.now() - start) / duration);
 
       let currentValue;
 
@@ -197,7 +197,7 @@ export function springTo(
       callback(currentValue);
 
       // 거의 정지 상태라면 애니메이션 종료
-      if (Math.abs(currentValue - dest) < 0.1) return res(true);
+      if (Math.abs(currentValue - dest) < 0.01) return res(true);
       
       requestAnimationFrame(animate);
     };

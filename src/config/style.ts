@@ -24,7 +24,7 @@ export const appStyleVars = css`
     --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 
     --font-size: clamp(6px, 3.2vw, 15px);
-    --border-radius: 20px;
+    --border-radius: 1.5em;
     --input-bg: rgba(10, 10, 10, 0.75);
     --red: rgba(255, 69, 58);
     --blue: #39a7fc;
@@ -58,29 +58,5 @@ export const appStyleVars = css`
     --audio-button: #313133;
     --audio-icon: rgba(255, 255, 255, 0.5);
     --audio-loading: rgba(0, 0, 0, 0.7);
-  }
-
-  @media (min-width: 480px) {
-    :host {
-      --font-size: 15px;
-    }
-  }
-
-  @media (min-width: 768px) {
-    :host {
-      --font-size: 16px;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    :host {
-      --font-size: 18px;
-    }
-  }
-
-  @media (min-width: 1440px) {
-    :host {
-      --font-size: 20px;
-    }
   }
 `;
