@@ -102,7 +102,6 @@ class Textarea extends LitComponent {
     }
     this.syncTextareaHeight();
     this.setShowBtn();
-  // duration is same at app.machine's InputCoor 'after duration(=150ms)'
   }, 150);
 
   protected override render() {

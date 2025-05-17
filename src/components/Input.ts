@@ -41,13 +41,15 @@ class Input extends LitComponent {
         this._appHeight = snap.context.appCoor.height;
       }
     });
-
+  }
+  
+  protected override firstUpdated(): void {
     // sync input coor
     this._resizeObserver = new ResizeObserver((entries) => {
-      const { height } = entries[0].contentRect;;
+      const { height } = entries[0].contentRect;
       this.actorRef.send({ type: "RESIZE_INPUT", height });
     });
-    
+
     this._resizeObserver.observe(this);
   }
 
