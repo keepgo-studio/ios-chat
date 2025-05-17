@@ -196,13 +196,28 @@ class Screen extends LitComponent {
       <ios-chat-scroll
         .blockAutoScroll=${this._isTyping && !this._isBottom}
         .scrollBehavior=${this._animate ? "smooth" : "auto"}
+        .padding=${{
+          top: "0",
+          right: "0",
+          bottom: `${this._inputHeight}px`,
+          left: "0",
+        }}
+        style=${styleMap({ paddingBottom: `${this._inputHeight}px` })}
       >
-        <ul 
+        <ios-chat-scrollbar
+          .scrollElemRef=${this.scrollElem}
           style=${styleMap({
+            paddingTop: this.padding?.top,
+            paddingBottom: `calc(${this.padding?.bottom} + ${this._inputHeight}px)`
+          })}
+        ></ios-chat-scrollbar>
+        <ul
+          style=${styleMap({
+            opacity: this._messages.length > 0 ? "1" : "0",
             paddingTop: this.padding?.top,
             paddingLeft: this.padding?.left,
             paddingRight: this.padding?.right,
-            paddingBottom: `calc(${this.padding?.bottom} + ${this._inputHeight}px)`
+            paddingBottom: this.padding?.bottom
           })}
         >
           ${repeat(
@@ -224,6 +239,13 @@ class Screen extends LitComponent {
   }
 
   protected static override shadowStyles = css`
+    ios-chat-scrollbar {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+
     ul {
       font-size: inherit;
       display: flex;
@@ -231,6 +253,7 @@ class Screen extends LitComponent {
       gap: .125em;
       height: 100%;
       width: 100%;
+      transition: var(--ease-out-quart) 500ms opacity;
     }
 
     li {
@@ -258,8 +281,8 @@ class Screen extends LitComponent {
       position: absolute;
       z-index: 0;
       bottom: 0;
-      height: 20px;
-      width: 20px;
+      height: 1.25em;
+      width: 1.25em;
       background: inherit;
       background-attachment: fixed;
     }
@@ -268,25 +291,25 @@ class Screen extends LitComponent {
       position: absolute;
       z-index: 1;
       bottom: 0;
-      width: 10px;
-      height: 20px;
+      width: 0.625em;
+      height: 1.25em;
       background: var(--theme-bg);
     }
     .tail.right:before {
-      right: -9px;
-      border-bottom-left-radius: 15px;
+      right: -0.5625em;
+      border-bottom-left-radius: 0.9375em;
     }
     .tail.right:after {
-      right: -10px;
-      border-bottom-left-radius: 10px;
+      right: -0.625em;
+      border-bottom-left-radius: 0.625em;
     }
     .tail.left:before {
-      left: -9px;
-      border-bottom-right-radius: 15px;
+      left: -0.5625em;
+      border-bottom-right-radius: 0.9375em;
     }
     .tail.left:after {
-      left: -10px;
-      border-bottom-right-radius: 10px;
+      left: -0.625em;
+      border-bottom-right-radius: 0.625em;
     }
   `;
 }

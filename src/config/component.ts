@@ -79,6 +79,8 @@ export default class LitComponent extends LitElement {
 
     this.addEventListener(type, wrapped, options);
 
-    return () => this.removeEventListener(type, wrapped, options);
+    const removeListener = () => this.removeEventListener(type, wrapped, options);
+
+    return removeListener;
   }
 }

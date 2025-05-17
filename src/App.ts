@@ -27,10 +27,10 @@ class App extends LitComponent {
 
   @state()
   _customScreenPadding: Padding = {
-    top: "10px",
-    left: "12px",
-    right: "12px",
-    bottom: "10px",
+    top: "0.625em",
+    left: "0.75em",
+    right: "0.75em",
+    bottom: "0.625em",
   };
 
   @query("ios-chat-screen")
