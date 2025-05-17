@@ -2,7 +2,13 @@ import LitComponent from "@/config/component";
 import { easeTo, MouseCoor, springTo } from "@/lib/animate";
 import { clamp, debounce, fixedToDecimal } from "@/lib/utils";
 import { css, html } from "lit";
-import { customElement, eventOptions, property, query, state } from "lit/decorators.js";
+import {
+  customElement,
+  eventOptions,
+  property,
+  query,
+  state,
+} from "lit/decorators.js";
 
 type ScrollPosition = "top" | "bottom";
 
@@ -13,7 +19,7 @@ type ScrollPosition = "top" | "bottom";
 class Scroll extends LitComponent {
   @property({ type: Number })
   wheelDirection = 1;
-  
+
   @property({ type: Number })
   dargDirection = -1;
 
@@ -34,10 +40,11 @@ class Scroll extends LitComponent {
 
   @state()
   _rootHeight = 0;
-  
+
   private _wrapperHeight = 0;
   private _resizeObserver?: ResizeObserver;
   private _currentY = 0;
+  private _mousemoveCachedY = 0;
   /**
    * The minimum y value, fixed at 0.
    */
@@ -54,7 +61,9 @@ class Scroll extends LitComponent {
 
   protected override firstUpdated(): void {
     const movePosition = (pos: ScrollPosition, smooth?: boolean) => {
-      const ease = smooth ? "ease" : undefined;
+      const ease = smooth
+        ? ({ from: this._currentY, type: "ease" } as const)
+        : undefined;
 
       switch (pos) {
         case "top":
@@ -62,17 +71,17 @@ class Scroll extends LitComponent {
         case "bottom":
           return this.moveTo(this._maxY, ease);
       }
-    }
+    };
 
     const setYMinMax = () => {
       this._minY = 0;
       this._maxY = Math.max(this._wrapperHeight - this._rootHeight, 0);
       if (this.blockAutoScroll) return;
       movePosition("bottom", this.scrollBehavior === "smooth");
-    }
+    };
 
     this._resizeObserver = new ResizeObserver((entries) => {
-      entries.forEach(entry => {
+      entries.forEach((entry) => {
         const target = entry.target;
 
         if (target.className === "root") {
@@ -95,49 +104,64 @@ class Scroll extends LitComponent {
 
   async moveTo(
     dest: number,
-    smoothType?: "ease" | "spring"
+    smooth?: {
+      from: number;
+      type: "ease" | "spring";
+    }
   ) {
     const syncY = (y: number) => {
       this.rootElem.scrollTop = y;
-      
+
       requestAnimationFrame(() => {
         const fixedPt = fixedToDecimal(Math.abs(y > 0 ? 0 : y), 0);
-        this.wrapperElem.style.paddingTop = `${(fixedPt)}px`;
+        this.wrapperElem.style.paddingTop = `${fixedPt}px`;
 
         const fixedPb = fixedToDecimal(y <= this._maxY ? 0 : y - this._maxY, 0);
         this.wrapperElem.style.paddingBottom = `${fixedPb}px`;
       });
+    };
+
+    // static move
+    if (!smooth) {
+      syncY(dest);
+      return;
     }
 
-    if (smoothType === "spring") {
-      const { run, cancelMoving } = springTo(
-        (t) => {
-          syncY(fixedToDecimal(t));
-        },
+    // animate move
+    switch (smooth.type) {
+      case "spring":
         {
-          from: this._currentY,
-          dest,
-          duration: 1500,
-          stiffness: 200,
-          damping: 20,
-          mass: 1,
+          const { run, cancelMoving } = springTo(
+            (t) => {
+              syncY(fixedToDecimal(t));
+            },
+            {
+              from: smooth.from,
+              dest,
+              duration: 1500,
+              stiffness: 200,
+              damping: 20,
+              mass: 1,
+            }
+          );
+
+          this._cancelMovingRef = cancelMoving;
+          await run();
         }
-      );
+        break;
+      case "ease":
+        {
+          const { run, cancelMoving } = easeTo(
+            (t) => {
+              syncY(fixedToDecimal(t));
+            },
+            { from: smooth.from, dest, duration: 1000 }
+          );
 
-      this._cancelMovingRef = cancelMoving;
-      await run();
-    } else if (smoothType === "ease") {
-      const { run, cancelMoving } = easeTo(
-        (t) => {
-          syncY(fixedToDecimal(t));
-        },
-        { from: this._currentY, dest, duration: 1000 }
-      );
-
-      this._cancelMovingRef = cancelMoving;
-      await run();
-    } else {
-      syncY(dest);
+          this._cancelMovingRef = cancelMoving;
+          await run();
+        }
+        break;
     }
   }
 
@@ -149,7 +173,7 @@ class Scroll extends LitComponent {
   }
 
   wheelMove = debounce((dest: number) => {
-    this.moveTo(dest, "ease");
+    this.moveTo(dest, { from: this._currentY, type: "ease" });
   }, 10);
 
   wheelHandler(e: WheelEvent) {
@@ -174,19 +198,15 @@ class Scroll extends LitComponent {
     this.cancelMoving();
 
     this._mouseCoor.startDrag(e.clientX, e.clientY);
+    this._mousemoveCachedY = this._currentY;
   }
 
   mousemoveHandler(e: MouseEvent) {
     if (!this._mouseCoor.isDragging()) return;
 
-    /**
-     * Since the 'scroll' event is fired later than 'mousemove',
-     * scaling up the movementY value is necessary to ensure smoother scrolling.
-     * For more details, see the scrollHandler() function.
-     */
-    const movementY = e.movementY * 1.6;
-    const dest = this.dargDirection * movementY;
-    this.moveTo(this._currentY + dest);
+    const dest = this.dargDirection * e.movementY;
+    this._mousemoveCachedY += dest;
+    this.moveTo(this._mousemoveCachedY);
   }
 
   mouseDetachHandler(e: MouseEvent) {
@@ -209,26 +229,25 @@ class Scroll extends LitComponent {
         ? this._rootHeight
         : 0;
 
-    const actualDest = this._currentY + this.dargDirection * step * downScaleV;
+    const actualDest = this._mousemoveCachedY + this.dargDirection * step * downScaleV;
     const dest = clamp(actualDest, this._minY, this._maxY);
 
     // If the destination is out of bounds,
     // use a spring animation for a more elastic effect.
     if (actualDest < this._minY || this._maxY < actualDest) {
-      this.moveTo(dest, "spring");
+      this.moveTo(dest, { from: this._mousemoveCachedY, type: "spring" });
       return;
     }
 
     // If the destination is within bounds,
     // Use a standard easing animation.
-    this.moveTo(dest, "ease");
+    this.moveTo(dest, { from: this._mousemoveCachedY, type: "ease" });
   }
 
   @eventOptions({ passive: true })
   scrollHandler(e: Event) {
     const y = (e.target as Element).scrollTop;
     this._currentY = y;
-    this.fireEvent("wheel-ratio", this._currentY / this._maxY);
   }
 
   protected override render(): unknown {
@@ -256,8 +275,8 @@ class Scroll extends LitComponent {
       overflow: auto;
       cursor: grab;
       /* hide scrollbar */
-      -ms-overflow-style: none;  /* IE and Edge */
-      scrollbar-width: none;  /* Firefox */
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
     }
     /* Hide scrollbar for Chrome, Safari and Opera */
     .root::-webkit-scrollbar {
