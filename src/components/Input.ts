@@ -9,16 +9,16 @@ class Input extends LitComponent {
   actorRef!: ChatMachineActorRef;
 
   @state()
-  isAttachmentOff = false;
+  _isAttachmentOff = false;
 
   @state()
-  openAttachment = false;
+  _openAttachment = false;
 
   @state()
-  appHeight = 0;
+  _appHeight = 0;
 
   @state()
-  appWidth = 0;
+  _appWidth = 0;
 
   private _resizeObserver?: ResizeObserver;
 
@@ -26,19 +26,19 @@ class Input extends LitComponent {
     const snapshot = this.actorRef.getSnapshot();
   
     // check is attachment is available at first
-    this.isAttachmentOff = snapshot.matches({ Render: { Attachment: "Disabled" } });
+    this._isAttachmentOff = snapshot.matches({ Render: { Attachment: "Disabled" } });
 
     // sync open attachment
     if (snapshot.matches({ Render: { Attachment: "Open" }})) {
-      this.openAttachment = true;
+      this._openAttachment = true;
     } else if (snapshot.matches({ Render: { Attachment: "Closed" }})) {
-      this.openAttachment = false;
+      this._openAttachment = false;
     }
 
     this.actorRef.subscribe(snap => {
       if (snap.matches({ Render: { Attachment: "Open" } })) {
-        this.appWidth = snap.context.appCoor.width;
-        this.appHeight = snap.context.appCoor.height;
+        this._appWidth = snap.context.appCoor.width;
+        this._appHeight = snap.context.appCoor.height;
       }
     });
 
@@ -64,12 +64,12 @@ class Input extends LitComponent {
   protected override render(): unknown {
     return html`
       <section>
-        ${!this.isAttachmentOff
+        ${!this._isAttachmentOff
           ? html`
               <ios-chat-toggle
-                .open=${this.openAttachment}
-                .appWidth=${this.appWidth}
-                .appHeight=${this.appHeight}
+                .open=${this._openAttachment}
+                .appWidth=${this._appWidth}
+                .appHeight=${this._appHeight}
                 @fire-toggle=${this.toggleHandler}
               ></ios-chat-toggle>
             `

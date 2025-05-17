@@ -14,23 +14,23 @@ class Textarea extends LitComponent {
   actorRef!: ChatMachineActorRef;
 
   @state()
-  blocked = false;
+  _blocked = false;
 
   @state()
-  showBtn = false;
+  _showBtn = false;
 
   @state()
-  imgs: ChatMessageContentMap["img"][] = [];
+  _imgs: ChatMessageContentMap["img"][] = [];
 
   @state()
-  maxHeight = 0;
+  _maxHeight = 0;
 
   @query("textarea")
   textareaElem!: HTMLTextAreaElement;
 
   override connected(): void {
     this.actorRef.subscribe((snap) => {
-      this.blocked = snap.matches({ Render: { Input: "Blocked" } });
+      this._blocked = snap.matches({ Render: { Input: "Blocked" } });
 
       if (snap.matches({ Render: { Input: { Ready: "TypeMode" } } })) {
         // this.imgs = snap.context.cachedMessageContents.filter(
@@ -40,14 +40,14 @@ class Textarea extends LitComponent {
 
       // sync height when App's height is chagned
       if (snap.matches({ Render: { Coor: "Stop" }})) {
-        this.maxHeight = snap.context.appCoor.height / 2;
+        this._maxHeight = snap.context.appCoor.height / 2;
         this.syncTextareaHeight();
       }
     });
   }
 
   setShowBtn() {
-    this.showBtn = this.textareaElem.value.length > 0;
+    this._showBtn = this.textareaElem.value.length > 0;
   }
 
   syncTextareaHeight() {
@@ -58,7 +58,7 @@ class Textarea extends LitComponent {
   }
 
   sendMessage() {
-    if (!this.showBtn) return;
+    if (!this._showBtn) return;
 
     const textContent: ChatMessageContentMap["text"] = {
       type: "text",
@@ -109,7 +109,7 @@ class Textarea extends LitComponent {
     return html`
       <section>
         <div class="custom-textarea">
-          ${this.imgs.length > 0 ? this.imgs.map(
+          ${this._imgs.length > 0 ? this._imgs.map(
             (img) => html`
               <div class="img-wrapper">
                 <img src=${img.val.src} alt=${img.val.alt ?? ""} />
@@ -121,13 +121,13 @@ class Textarea extends LitComponent {
           <div 
             class="typing-area"
             style=${styleMap({
-              maxHeight: this.maxHeight > 0 ? `${Math.ceil(this.maxHeight)}px` : "",
+              maxHeight: this._maxHeight > 0 ? `${Math.ceil(this._maxHeight)}px` : "",
             })}
           >
             <textarea
               rows=${1}
               placeholder="Chat"
-              ?disabled=${this.blocked}
+              ?disabled=${this._blocked}
               @keypress=${this.keyHandler}
               @focus=${this.focusHandler}
               @input=${this.inputHandler}
@@ -139,7 +139,7 @@ class Textarea extends LitComponent {
         <div class="btn-wrapper">
           <button
             style=${styleMap({ 
-              display: this.showBtn ? "" : "none"
+              display: this._showBtn ? "" : "none"
             })}
             class="submit-btn"
             @click=${this.sendMessage}

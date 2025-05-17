@@ -9,35 +9,35 @@ class Attachment extends LitComponent {
   actorRef!: ChatMachineActorRef;
 
   @state()
-  disabled = false;
+  _disabled = false;
 
   @state()
-  isOpen = false;
+  _isOpen = false;
 
   @state()
-  blocked = false;
+  _blocked = false;
 
   override connected(): void {
     this.actorRef.subscribe(snap => {
       if (snap.matches({ Render: { Attachment: "Disabled" }})) {
-        this.disabled = true;
+        this._disabled = true;
         return;
       }
 
       if (snap.matches({ Render: { Attachment: "Open" }})) {
-        this.isOpen = true;
+        this._isOpen = true;
       } else if (
         snap.matches({ Render: { Attachment: "Closed" }})
       ) {
-        this.isOpen = false;
+        this._isOpen = false;
       }
 
-      this.blocked = snap.matches({ Render: { Attachment: "Blocked" }});
+      this._blocked = snap.matches({ Render: { Attachment: "Blocked" }});
     })
   }
 
   protected override render() {
-    if (this.disabled) return;
+    if (this._disabled) return;
 
     return html`
       <div></div>
