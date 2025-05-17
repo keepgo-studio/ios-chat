@@ -1,5 +1,3 @@
-import { fixedToThirdDecimal } from "./utils";
-
 type MoveDirction = 'hor' | 'ver' | 'both';
 
 class Velocity {
@@ -60,7 +58,7 @@ export class MouseCoor {
  * @see https://easings.net
  */
 const Ease = {
-  easeOutExpo: (x: number) => (x === 1 ? 1 : 1 - Math.pow(2, -10 * x)),
+  easeOutQuint: (x: number) => (1 - Math.pow(1 - x, 5)),
   easeInOutQuad: (x: number) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2,
 }
 
@@ -75,11 +73,11 @@ type MoveParams = {
 export function easeTo(
   callback: MoveCallback,
   params: MoveParams,
-  ease: keyof typeof Ease = "easeOutExpo",
+  ease: keyof typeof Ease = "easeOutQuint",
 ) {
   const { from, dest, duration } = params;
   let lifeCycle = true;
-  const validEase: EaseKey = ease in Ease ? ease : "easeOutExpo";
+  const validEase: EaseKey = ease in Ease ? ease : "easeOutQuint";
 
   const cancelMoving = () => {
     lifeCycle = false;
@@ -93,7 +91,7 @@ export function easeTo(
 
       const currentTime = Date.now();
       const elapsed = (currentTime - start) / duration;
-      const time = elapsed > 1 ? 1 : fixedToThirdDecimal(elapsed);
+      const time = elapsed > 1 ? 1 : elapsed;
       const easedT = Ease[validEase](time);
       const t = easedT * (dest - from) + from;
 
@@ -177,7 +175,7 @@ export function springTo(
     const animate = () => {
       if (!lifeCycle) return res(false);
 
-      const elapsed = fixedToThirdDecimal((Date.now() - start) / duration);
+      const elapsed = (Date.now() - start) / duration;
 
       let currentValue;
 

@@ -4,13 +4,15 @@ type AnswerMessage = ChatMessage;
 
 type InitMessage = ChatMessage[];
 
-type Toggle = boolean;
+type FireToggle = boolean;
 
+type WheelRatio = number;
 declare global {
   interface CustomEventDetailMap {
     "controller:answer-message": AnswerMessage;
     "controller:init-message": InitMessage;
-    "fire-toggle": Toggle;
+    "fire-toggle": FireToggle;
+    "wheel-ratio": WheelRatio;
   }
 
   /**

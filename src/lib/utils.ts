@@ -48,10 +48,14 @@ export function debounce(callback: Procedure, delay: number): Procedure {
   };
 };
 
-export function fixedToThirdDecimal(num: number) {
-  return Math.round(num * 1000) / 1000;
-}
+export function fixedToDecimal(num: number, precision: number = 3): number {
+  if (precision < 0 || !Number.isInteger(precision)) {
+    throw new Error("Precision must be a non-negative integer.");
+  }
 
+  const factor = Math.pow(10, precision);
+  return Math.round(num * factor) / factor;
+}
 export function pxToNumber(pxStr: string) {
   return Number(pxStr.split("px")[0]);
 }

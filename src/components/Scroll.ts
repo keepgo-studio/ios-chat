@@ -1,12 +1,14 @@
 import LitComponent from "@/config/component";
 import { easeTo, MouseCoor, springTo } from "@/lib/animate";
-import { clamp, debounce, fixedToThirdDecimal } from "@/lib/utils";
+import { clamp, debounce, fixedToDecimal } from "@/lib/utils";
 import { css, html } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
-import { styleMap } from "lit/directives/style-map.js";
+import { customElement, eventOptions, property, query, state } from "lit/decorators.js";
 
 type ScrollPosition = "top" | "bottom";
 
+/**
+ * @fires wheel-ratio
+ */
 @customElement("ios-chat-scroll")
 class Scroll extends LitComponent {
   @property({ type: Number })
@@ -63,8 +65,8 @@ class Scroll extends LitComponent {
     }
 
     const setYMinMax = () => {
-      this._minY = this._rootHeight;
-      this._maxY = this._rootHeight > this._wrapperHeight ? this._rootHeight : this._wrapperHeight;
+      this._minY = 0;
+      this._maxY = Math.max(this._wrapperHeight - this._rootHeight, 0);
       if (this.blockAutoScroll) return;
       movePosition("bottom", this.scrollBehavior === "smooth");
     }
@@ -96,14 +98,21 @@ class Scroll extends LitComponent {
     smoothType?: "ease" | "spring"
   ) {
     const syncY = (y: number) => {
-      this._currentY = y;
-      this.rootElem.scrollTop = this._currentY;
+      this.rootElem.scrollTop = y;
+      
+      requestAnimationFrame(() => {
+        const fixedPt = fixedToDecimal(Math.abs(y > 0 ? 0 : y), 0);
+        this.wrapperElem.style.paddingTop = `${(fixedPt)}px`;
+
+        const fixedPb = fixedToDecimal(y <= this._maxY ? 0 : y - this._maxY, 0);
+        this.wrapperElem.style.paddingBottom = `${fixedPb}px`;
+      });
     }
 
     if (smoothType === "spring") {
       const { run, cancelMoving } = springTo(
         (t) => {
-          syncY(fixedToThirdDecimal(t));
+          syncY(fixedToDecimal(t));
         },
         {
           from: this._currentY,
@@ -120,7 +129,7 @@ class Scroll extends LitComponent {
     } else if (smoothType === "ease") {
       const { run, cancelMoving } = easeTo(
         (t) => {
-          syncY(fixedToThirdDecimal(t));
+          syncY(fixedToDecimal(t));
         },
         { from: this._currentY, dest, duration: 1000 }
       );
@@ -159,7 +168,6 @@ class Scroll extends LitComponent {
 
       this.moveTo(dest);
     }
-
   }
 
   mousedownHandler(e: MouseEvent) {
@@ -171,14 +179,21 @@ class Scroll extends LitComponent {
   mousemoveHandler(e: MouseEvent) {
     if (!this._mouseCoor.isDragging()) return;
 
-    this.moveTo(this._currentY + this.dargDirection * e.movementY)
+    /**
+     * Since the 'scroll' event is fired later than 'mousemove',
+     * scaling up the movementY value is necessary to ensure smoother scrolling.
+     * For more details, see the scrollHandler() function.
+     */
+    const movementY = e.movementY * 1.6;
+    const dest = this.dargDirection * movementY;
+    this.moveTo(this._currentY + dest);
   }
 
   mouseDetachHandler(e: MouseEvent) {
     if (!this._mouseCoor.isDragging()) return;
 
     const v = this._mouseCoor.endDragging(e.clientX, e.clientY, "ver");
-    const downScaleV = fixedToThirdDecimal(0.5 * v);
+    const downScaleV = fixedToDecimal(0.5 * v);
     /**
      * This ternary operator for UX improvment
      *
@@ -209,6 +224,13 @@ class Scroll extends LitComponent {
     this.moveTo(dest, "ease");
   }
 
+  @eventOptions({ passive: true })
+  scrollHandler(e: Event) {
+    const y = (e.target as Element).scrollTop;
+    this._currentY = y;
+    this.fireEvent("wheel-ratio", this._currentY / this._maxY);
+  }
+
   protected override render(): unknown {
     return html`
       <div
@@ -218,13 +240,9 @@ class Scroll extends LitComponent {
         @mousemove=${this.mousemoveHandler}
         @mouseup=${this.mouseDetachHandler}
         @mouseleave=${this.mouseDetachHandler}
+        @scroll=${this.scrollHandler}
       >
-        <div 
-          class="wrapper" 
-          style=${styleMap({
-            padding: `${this._rootHeight}px 0`
-          })}
-        >
+        <div class="wrapper">
           <slot></slot>
         </div>
       </div>
