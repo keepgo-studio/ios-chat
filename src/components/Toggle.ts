@@ -30,7 +30,6 @@ class Toggle extends LitComponent {
           width: this.open ? `${this.appWidth / 2}px` : "",
           filter: this.open ? `blur(${this.appWidth / 5}px)` : "",
           boxShadow: this.open ? `rgba(255, 255, 255, 0.5) 0px 0px 32px 1px` : "",
-          transition: "inherit"
         })}>
           <ios-chat-svg .data=${plusSvg}></ios-chat-svg>
         </button>

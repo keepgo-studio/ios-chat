@@ -22,7 +22,8 @@ class App extends LitComponent {
   _errorMsg: string | null = null;
 
   @state()
-  _fontSize: string | null = null
+  _fontSize: string | null = null;
+
   private _customFontSize: string | null = null
 
   @state()
@@ -69,20 +70,27 @@ class App extends LitComponent {
         this._customFontSize = parseFontSizeStr(fontSize);
       }
 
-      this._resizeObserver = new ResizeObserver((entries) => {
-        const { width, height } = entries[0].contentRect;
-        this._actor.send({ type: "RESIZE_APP", width, height });
-        this.setFont();
+      this._actor.subscribe(snap => {
+        if (snap.matches({ Render: { Coor: "Stop" }})) {
+          this.setFont();
+        }
       });
-
-      this._resizeObserver.observe(this);
 
       this._actor.send({ type: "CREATE_ROOM", info });
     } catch (err) {
       this._errorMsg = err instanceof Error ? err.message : "Chat crashed!";
     }
   }
-  
+
+  protected override firstUpdated(): void {
+    this._resizeObserver = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      this._actor.send({ type: "RESIZE_APP", width, height });
+    });
+
+    this._resizeObserver.observe(this);
+  }
+
   setFont() {
     if (this._customFontSize === null) {
       // 360 / 22.5 = 16px, based width is 360px;
