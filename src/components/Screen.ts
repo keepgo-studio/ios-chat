@@ -130,6 +130,7 @@ class Screen extends LitComponent {
     const recentMessage = this._messages[this._messages.length - 1];
     const li = this.lastMessageElem;
     const isSender = recentMessage.role === "sender";
+    const isStaticSize = recentMessage.contents.some(c => c.type === "img");
     const messageElem = li.querySelector("ios-chat-message")!;
     const ulCStyle = window.getComputedStyle(this.ulElem);
     // style variables
@@ -143,12 +144,12 @@ class Screen extends LitComponent {
 
     // before painting recent ios-chat-message
     const beforeAnimate = () => {
-      li.style.maxWidth = "none";
+      li.style.maxWidth = !isStaticSize ? "none" : "";
 
       li.style.zIndex = isSender ? "99" : "";
       li.style.color = "var(--theme-color)";
       li.style.background = "var(--textarea)";
-      li.style.width = isSender ? `${textareaCoor.width}px` : "";
+      li.style.width = (isSender && !isStaticSize) ? `${textareaCoor.width}px` : "";
       li.style.transform = `translateY(${y}px)`;
     }
 
@@ -163,7 +164,7 @@ class Screen extends LitComponent {
 
       li.style.color = isSender ? "#fff" : "";
       li.style.background = isSender ? "var(--blue)" : "var(--message-color)";
-      li.style.width = `${messageWidth}px`;
+      li.style.width = (isSender && !isStaticSize) ? `${messageWidth}px` : "";
       li.style.transform = `translateY(0px)`;
     }
 
@@ -260,6 +261,7 @@ class Screen extends LitComponent {
       position: relative;
       width: fit-content;
       max-width: ${MESSAGE_WIDTH_RATIO * 100}%;
+      box-shadow: 0 0 0 2px var(--message-color);
       border-radius: var(--border-radius);
     }
     li.sender {
@@ -273,6 +275,11 @@ class Screen extends LitComponent {
       color: var(--theme-color);
     }
 
+    ios-chat-message {
+      position: relative;
+      z-index: 2;
+    }
+  
     .tail {
       background: inherit;
     }

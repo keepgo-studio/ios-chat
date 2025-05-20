@@ -63,10 +63,11 @@ class Scroll extends LitComponent {
 
   protected override connected(): void {
     this.listenEvent("scroll-to", ({ y }) => {
+      this.cancelMoving();
       if (y) {
         this.rootElem.scrollTop = y;
       }
-    })    
+    });
   }
 
   protected override firstUpdated(): void {

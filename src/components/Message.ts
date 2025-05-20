@@ -41,7 +41,8 @@ class Message extends LitComponent {
     }
     .message {
       border-radius: inherit;
-      word-break: break-all;
+      word-break: break-word;
+      overflow: hidden;
     }
   `;
 }

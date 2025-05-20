@@ -28,19 +28,18 @@ class Input extends LitComponent {
     // check is attachment is available at first
     this._isAttachmentOff = snapshot.matches({ Render: { Attachment: "Disabled" } });
 
-    // sync open attachment
-    if (snapshot.matches({ Render: { Attachment: "Open" }})) {
-      this._openAttachment = true;
-    } else if (snapshot.matches({ Render: { Attachment: "Closed" }})) {
-      this._openAttachment = false;
+    if (!this._isAttachmentOff) {
+      this.actorRef.subscribe(snap => {
+        // sync open or close
+        if (snap.matches({ Render: { Attachment: "Open" }})) {
+          this._appWidth = snap.context.appCoor.width;
+          this._appHeight = snap.context.appCoor.height;
+          this._openAttachment = true;
+        } else if (snap.matches({ Render: { Attachment: "Closed" }})) {
+          this._openAttachment = false;
+        }
+      });
     }
-
-    this.actorRef.subscribe(snap => {
-      if (snap.matches({ Render: { Attachment: "Open" } })) {
-        this._appWidth = snap.context.appCoor.width;
-        this._appHeight = snap.context.appCoor.height;
-      }
-    });
   }
   
   protected override firstUpdated(): void {
@@ -78,7 +77,10 @@ class Input extends LitComponent {
           : undefined
         }
 
-        <ios-chat-textarea .actorRef=${this.actorRef}></ios-chat-textarea>
+        <ios-chat-textarea 
+          class=${this._openAttachment ? "open" : ""}
+          .actorRef=${this.actorRef}
+        ></ios-chat-textarea>
       </section>
     `;
   }
@@ -88,6 +90,7 @@ class Input extends LitComponent {
       width: 100%;
       display: flex;
       align-items: flex-end;
+      justify-content: space-between;
       padding: 0.625em 1em;
       gap: .5em;
       backdrop-filter: blur(12px);
@@ -97,6 +100,10 @@ class Input extends LitComponent {
 
     ios-chat-textarea {
       flex: 1;
+      transition: var(--ease-out-back) 600ms;
+    }
+    ios-chat-textarea.open {
+      flex: 0.6;
     }
   `;
 

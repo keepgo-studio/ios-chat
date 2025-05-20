@@ -6,6 +6,7 @@ type ChatErrorCode =
   | "CHAT_ROOM_NOT_FOUND"
   | "CHAT_ROOM_BLOCKED"
   | "HTML_REF_ERROR"
+  | "FILE_ERROR"
   ;
 
 type SupportErrorCode = ChatErrorCode;

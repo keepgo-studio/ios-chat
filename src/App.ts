@@ -124,9 +124,6 @@ class App extends LitComponent {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
         Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
     }
-    ios-chat-attachment {
-      position: absolute;
-    }
     ios-chat-screen {
       flex: 1;
     }
@@ -135,6 +132,7 @@ class App extends LitComponent {
       left: 0;
       right: 0;
       bottom: 0;
+      z-index: 3;
     }
   `;
 

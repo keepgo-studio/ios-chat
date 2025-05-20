@@ -29,7 +29,8 @@ class Toggle extends LitComponent {
           bottom: this.open ?  `${this.appHeight / 4}px` : "",
           width: this.open ? `${this.appWidth / 2}px` : "",
           filter: this.open ? `blur(${this.appWidth / 5}px)` : "",
-          boxShadow: this.open ? `rgba(255, 255, 255, 0.5) 0px 0px 32px 1px` : ""
+          boxShadow: this.open ? `rgba(255, 255, 255, 0.5) 0px 0px 32px 1px` : "",
+          transition: "inherit"
         })}>
           <ios-chat-svg .data=${plusSvg}></ios-chat-svg>
         </button>
@@ -51,11 +52,12 @@ class Toggle extends LitComponent {
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: ease 300ms;
       cursor: pointer;
+      transition: var(--ease-out-back) 600ms;
     }
-    div:active button {
-      width: 1.5em;
+    div:active {
+      transform: scale(0.8);
+      width: 1.9em;
     }
     div > button:not(.copy) {
       opacity: 0;
@@ -82,8 +84,8 @@ class Toggle extends LitComponent {
       left: 50%;
       transform: translate(-50%, 50%);
       width: 1.8em;
-      transition: var(--ease-out-back) 600ms;
-      z-index: 10;
+      transition: inherit;
+      z-index: 1;
     }
   `;
 }

@@ -33,9 +33,10 @@ class Textarea extends LitComponent {
       this._blocked = snap.matches({ Render: { Input: "Blocked" } });
 
       if (snap.matches({ Render: { Input: { Ready: "TypeMode" } } })) {
-        // this.imgs = snap.context.cachedMessageContents.filter(
-        //   (message) => message.type === "img"
-        // );
+        this._imgs = snap.context.cachedMessageContents.filter(
+          (message) => message.type === "img"
+        );
+        this.setShowBtn();
       }
 
       // sync height when App's height is chagned
@@ -47,14 +48,16 @@ class Textarea extends LitComponent {
   }
 
   setShowBtn() {
-    this._showBtn = this.textareaElem.value.length > 0;
+    this._showBtn = this.textareaElem.value.length > 0 || this._imgs.length > 0;
   }
 
   syncTextareaHeight() {
     const el = this.textareaElem;
 
     el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
+    if (el.value.length > 0) {
+      el.style.height = `${el.scrollHeight}px`;
+    }
   }
 
   sendMessage() {
@@ -107,16 +110,22 @@ class Textarea extends LitComponent {
   protected override render() {
     return html`
       <section>
-        <div class="custom-textarea">
-          ${this._imgs.length > 0 ? this._imgs.map(
-            (img) => html`
+        ${this._imgs.length > 0 ? html`
+          <div class="attached">
+            ${this._imgs.map(
+            (img, index) => html`
               <div class="img-wrapper">
-                <img src=${img.val.src} alt=${img.val.alt ?? ""} />
-                <button class="close-btn"></button>
+                <ios-chat-img .data=${img.val}></ios-chat-img>
+                <button
+                  class="close-btn" 
+                  @click=${() => this.actorRef.send({ type: "DETACH_IMAGE", index })}
+                ></button>
               </div>
-            `
-          ) : ""}
+            `)}
+          </div>  
+        ` : undefined}
 
+        <div>
           <div 
             class="typing-area"
             style=${styleMap({
@@ -137,9 +146,7 @@ class Textarea extends LitComponent {
 
         <div class="btn-wrapper">
           <button
-            style=${styleMap({ 
-              display: this._showBtn ? "" : "none"
-            })}
+            style=${styleMap({ display: this._showBtn ? "" : "none" })}
             class="submit-btn"
             @click=${this.sendMessage}
           >
@@ -154,35 +161,38 @@ class Textarea extends LitComponent {
     section {
       width: 100%;
       position: relative;
-      display: flex;
-      align-items: flex-end;
+      display:grid;
+      grid-template-columns: 1fr auto;
       box-shadow: 0 0 0 2px var(--message-color);
       border-radius: var(--border-radius);
       background-color: var(--textarea);
       overflow: hidden;
     }
-    
-    .custom-textarea {
-      width: 100%;
-      flex: 1;
-    }
 
-    .img-wrapper {
+    .attached {
+      overflow-x: auto;
       padding: 0.5em;
+      display: flex;
+      gap: 0.25em;
+      grid-column: 1/3;
+    }
+    .img-wrapper {
+      flex-shrink: 0;
       width: fit-content;
       position: relative;
-    }
-    .img-wrapper img {
       border-radius: 1em;
-      width: 8em;
+      height: 8em;
+      overflow: hidden;
+    }
+    .img-wrapper ios-chat-img {
       user-select: none;
     }
     .img-wrapper .close-btn {
       width: 1.4em;
       aspect-ratio: 1/1;
       position: absolute;
-      right: 0.8em;
-      top: 0.8em;
+      right: 0.25em;
+      top: 0.25em;
       background-color: #7c7d7f;
       border: #fff 2px solid;
       border-radius: 999px;
