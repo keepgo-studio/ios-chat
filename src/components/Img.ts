@@ -48,6 +48,10 @@ class Img extends LitComponent {
 
   protected override willUpdate(_changedProperties: PropertyValues): void {
     if (_changedProperties.has("data") && this.data) {
+      if (this._src) {
+        URL.revokeObjectURL(this._src);
+      }
+
       let imgSrc = "";
 
       if ("src" in this.data) {
@@ -119,6 +123,12 @@ class Img extends LitComponent {
       object-fit: cover;
     }
   `;
+
+  protected override disconnected(): void {
+    if (this._src) {
+      URL.revokeObjectURL(this._src);
+    }
+  }
 }
 
 declare global {

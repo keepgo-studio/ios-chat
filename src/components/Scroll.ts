@@ -64,7 +64,7 @@ class Scroll extends LitComponent {
   protected override connected(): void {
     this.listenEvent("scroll-to", ({ y }) => {
       this.cancelMoving();
-      if (y) {
+      if (y !== undefined) {
         this.rootElem.scrollTop = y;
       }
     });
@@ -111,6 +111,9 @@ class Scroll extends LitComponent {
     this._resizeObserver.observe(this.wrapperElem);
 
     this._rootHeight = this.rootElem.offsetHeight;
+
+    window.addEventListener("mousemove", this.mousemoveHandler.bind(this));
+    window.addEventListener("mouseup", this.mouseDetachHandler.bind(this));
   }
 
   async moveTo(
@@ -142,7 +145,6 @@ class Scroll extends LitComponent {
       syncY(dest);
       return;
     }
-
     // animate move
     switch (smooth.type) {
       case "spring":
@@ -208,7 +210,7 @@ class Scroll extends LitComponent {
   mousedownHandler(e: MouseEvent) {
     this.cancelMoving();
 
-    this._mouseCoor.startDrag(e.clientX, e.clientY);
+    this._mouseCoor.startDrag(e.screenX, e.screenY);
     this._mousemoveCachedY = this._currentY;
   }
 
@@ -224,7 +226,7 @@ class Scroll extends LitComponent {
     if (!this._mouseCoor.isDragging()) return;
 
     const canScroll = this._rootHeight < this._wrapperHeight;
-    const v = this._mouseCoor.endDragging(e.clientX, e.clientY, "ver");
+    const v = this._mouseCoor.endDragging(e.screenX, e.screenY, "ver");
     const downScaleV = fixedToDecimal(0.5 * v);
     /**
      * This ternary operator for UX improvment
@@ -246,14 +248,13 @@ class Scroll extends LitComponent {
 
     this.moveTo(dest, {
       from: this._mousemoveCachedY,
-      type:
-        canScroll && (actualDest < this._minY || this._maxY < actualDest)
-          // If the destination is out of bounds,
-          // use a spring animation for a more elastic effect.
-          ? "spring"
-          // If the destination is within bounds,
-          // Use a standard easing animation.
-          : "ease",
+      type: canScroll && (actualDest < this._minY || this._maxY < actualDest)
+        // If the destination is out of bounds,
+        // use a spring animation for a more elastic effect.
+        ? "spring"
+        // If the destination is within bounds,
+        // Use a standard easing animation.
+        : "ease",
     });
   }
 
@@ -266,6 +267,14 @@ class Scroll extends LitComponent {
 
   protected override render(): unknown {
     return html`
+      <ios-chat-scrollbar 
+        .scrollElemRef=${this}
+        style=${styleMap({
+          paddingTop: this.padding?.top,
+          paddingBottom: this.padding?.bottom
+        })}
+      ></ios-chat-scrollbar>
+
       <div
         class="root"
         style=${styleMap({
@@ -276,9 +285,6 @@ class Scroll extends LitComponent {
         })}
         @mousewheel=${this.wheelHandler}
         @mousedown=${this.mousedownHandler}
-        @mousemove=${this.mousemoveHandler}
-        @mouseup=${this.mouseDetachHandler}
-        @mouseleave=${this.mouseDetachHandler}
         @scroll=${this.scrollHandler}
       >
         <div class="wrapper">
@@ -289,6 +295,17 @@ class Scroll extends LitComponent {
   }
 
   protected static override shadowStyles = css`
+    :host {
+      position: relative;
+    }
+
+    ios-chat-scrollbar {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+
     .root {
       width: 100%;
       height: 100%;
@@ -311,6 +328,8 @@ class Scroll extends LitComponent {
   `;
 
   protected override disconnected(): void {
+    window.removeEventListener("mousemove", this.mousemoveHandler);
+    window.removeEventListener("mouseup", this.mouseDetachHandler);
     this._resizeObserver?.disconnect();
   }
 }

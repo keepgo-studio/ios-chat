@@ -1,8 +1,9 @@
 import LitComponent from "@/config/component";
-import { debounce, fixedToDecimal } from "@/lib/utils";
+import { clamp, debounce, fixedToDecimal } from "@/lib/utils";
 import { css, html, type PropertyValues } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
+import { classMap } from "lit/directives/class-map.js";
 
 const TAG_NAME = "ios-chat-scrollbar";
 
@@ -12,7 +13,7 @@ class Scrollbar extends LitComponent {
   scrollElemRef?: LitComponent;
 
   @state()
-  _thumbHeightRatio = 0;
+  _disabled = false;
 
   @state()
   _yPercent = 0;
@@ -20,56 +21,82 @@ class Scrollbar extends LitComponent {
   @state()
   _show = false;
 
-  @query(".bar")
+  @query("section")
   barElem!: HTMLElement;
 
   @query(".thumb")
   thumbElem!: HTMLElement;
 
-  private _startDrag = false;
+  @state()
+  _thumbY = 0;
+
+  @state()
+  _thumbHeight = 0;
+
+  private _scrollElemCoor = {
+    rootHeight: 0,
+    wrapperHeight: 0
+  };
   private _barHeight = 0;
-  private _wrapperHeight = 0;
   private _resizeObserver?: ResizeObserver;
-  private _scrollingListener?: () => void;
+  private _scrollingUnsubscribe?: () => void;
+  private _startDrag = false;
+
+  protected override firstUpdated(): void {
+    window.addEventListener("mousemove", this.mousemoveHandler.bind(this));
+    window.addEventListener("mouseup", this.mouseDetachHandler.bind(this));
+  }
 
   protected override updated(_changedProperties: PropertyValues): void {
     if (_changedProperties.has("scrollElemRef") && this.scrollElemRef) {
-      const wrapper = this.scrollElemRef.shadowRoot!.querySelector(
-        ".wrapper"
-      ) as HTMLElement;
+      const ref = this.scrollElemRef.shadowRoot!;
+      const rootElem = ref.querySelector<HTMLElement>(".root")!;
+      const scrollContent = ref.querySelector<HTMLElement>(".wrapper")!;
 
       // clear listeners
       this._resizeObserver?.disconnect();
-      if (this._scrollingListener) {
-        this._scrollingListener();
+      if (this._scrollingUnsubscribe) {
+        this._scrollingUnsubscribe();
       }
 
       this._resizeObserver = new ResizeObserver((entries) => {
         entries.forEach((entry) => {
+          const { target } = entry;
           const h = entry.contentRect.height;
 
-          if (entry.target.className === "bar") {
+          if (target.tagName.toLowerCase() === "section") {
             this._barHeight = h;
           }
 
-          if (entry.target.className === "wrapper") {
-            this._wrapperHeight = h;
+          if (target.className === "root") {
+            this._scrollElemCoor.rootHeight = h;
           }
 
-          const ratio = this._barHeight / this._wrapperHeight;
-          this._thumbHeightRatio = ratio > 1 ? -1 : ratio;
+          if (target.className === "wrapper") {
+            this._scrollElemCoor.wrapperHeight = h;
+          }
+
+          this._disabled = this._scrollElemCoor.rootHeight >= this._scrollElemCoor.wrapperHeight;
+
+          if (!this._disabled) {
+            const scaleBetweenBarAndWrapper = this._barHeight / this._scrollElemCoor.wrapperHeight;
+            const thumbHeightRatio = scaleBetweenBarAndWrapper;
+            this._thumbHeight = this._barHeight * thumbHeightRatio;
+          }
         });
       });
 
       this._resizeObserver.observe(this.barElem);
-      this._resizeObserver.observe(wrapper);
+      this._resizeObserver.observe(rootElem);
+      this._resizeObserver.observe(scrollContent);
 
-      this._scrollingListener = this.scrollElemRef.listenEvent("scrolling", (y) => {
-          const ratio = fixedToDecimal(y / this._wrapperHeight);
-          // _yRatio = x, _thumbHeightRatio = t, _wrapperHeight = w
-          // 100 : x = t : y / w
-          // x = 100 * (y / w) / t
-          this._yPercent = (100 * ratio) / this._thumbHeightRatio;
+      this._scrollingUnsubscribe = this.scrollElemRef.listenEvent("scrolling", (y) => {
+          if (this._disabled) return;
+
+          const totalScrollY = this._scrollElemCoor.wrapperHeight - this._scrollElemCoor.rootHeight;
+          const currentYRatio = fixedToDecimal(y / totalScrollY);
+          const totalThumbY = this._barHeight - this._thumbHeight;
+          this._thumbY = totalThumbY * currentYRatio;
           this._show = true;
           this.hideThumb();
         }
@@ -81,56 +108,58 @@ class Scrollbar extends LitComponent {
     this._show = false;
   }, 250);
 
-  syncScroll(e: MouseEvent) {
-    const ratio = e.layerY / this._barHeight;
-    this.scrollElemRef?.fireEvent("scroll-to", {
-      y: ratio * this._wrapperHeight
-    });
-  }
-
   mousedownHandler(e: MouseEvent) {
+    e.preventDefault();
     e.stopPropagation();
+
     this._startDrag = true;
-    this.syncScroll(e);
+    const isThumb = (e.target as HTMLElement).className === "thumb";
+
+    // const thumbY = e.layerY - e.offsetY;
+    if (!isThumb) {
+      const totalThumbY = this._barHeight - this._thumbHeight;
+      const totalScrollY = this._scrollElemCoor.wrapperHeight - this._scrollElemCoor.rootHeight;
+      const pickThumbY = clamp(e.layerY - this._thumbHeight / 2, 0, totalThumbY);
+      
+      this.scrollElemRef?.fireEvent("scroll-to", {
+        y: totalScrollY * (pickThumbY / totalThumbY)
+      });
+    }
   }
 
   mousemoveHandler(e: MouseEvent) {
-    e.stopPropagation();
     if (!this._startDrag) return;
-    this.syncScroll(e);
+
+    const totalThumbY = this._barHeight - this._thumbHeight;
+    const totalScrollY = this._scrollElemCoor.wrapperHeight - this._scrollElemCoor.rootHeight;
+    const scaleY = e.movementY * (window.innerHeight / totalThumbY);
+
+    this.scrollElemRef?.fireEvent("scroll-to", {
+      y: totalScrollY * (this._thumbY + scaleY) / totalThumbY
+    });
   }
-  
-  mouseDetachHandler(e: Event) {
-    e.stopPropagation();
+
+  mouseDetachHandler() {
     this._startDrag = false;
   }
 
   protected override render(): unknown {
-    const isDisabled = this._thumbHeightRatio === -1;
-
     return html`
-      <div 
-        class="bar"
-        style=${styleMap({
-          opacity: isDisabled ? "0" : "",
-          pointerEvents: isDisabled ? "none": ""
-        })}
+      <section 
+        class=${classMap({ bar: true, disabled: this._disabled })}
         @mousedown=${this.mousedownHandler}
-        @mousemove=${this.mousemoveHandler}
-        @mouseup=${this.mouseDetachHandler}
-        @mouseleave=${this.mouseDetachHandler}
       >
         <div
           class="thumb"
-          style=${styleMap(isDisabled ? {} : {
-            height: `${this._thumbHeightRatio * 100}%`,
+          style=${styleMap(this._disabled ? {} : {
+            height: `${this._thumbHeight}px`,
             opacity: this._show ? "1" : "0",
-            transform: `translateY(${this._yPercent}%)`,
+            transform: `translateY(${this._thumbY}px)`,
             transitionDuration: this._show ? "200ms" : "800ms",
           })}
         >
         </div>
-      </div>
+      </section>
     `;
   }
 
@@ -140,21 +169,40 @@ class Scrollbar extends LitComponent {
       z-index: 3;
       height: 100%;
       border-radius: 999px;
-      padding: 0 0.3em 0 0.15em;
+      width: 0.6em;
       overflow-y: hidden;
       cursor: pointer;
     }
+    .bar.disabled {
+      opacity: 0;
+      pointer-events: none;
+    }
 
     .thumb {
-      position: relative;
-      width: 0.25em;
-      transition: ease opacity;
+      /* opacity: 0; */
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 0.6em;
+      padding: 0 0.15em;
+      transition: ease opacity, height;
+    }
+    .bar:hover .thumb {
+      opacity: 1 !important;
+    }
+    .thumb::after {
+      content: "";
       border-radius: 999px;
+      display: block;
+      width: 100%;
+      height: 100%;
       background-color: var(--scrollbar);
     }
   `;
 
   protected override disconnected(): void {
+    window.removeEventListener("mousemove", this.mousemoveHandler);
+    window.removeEventListener("mouseup", this.mouseDetachHandler);
     this._resizeObserver?.disconnect();
   }
 }

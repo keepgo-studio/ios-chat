@@ -15,7 +15,7 @@ class Screen extends LitComponent {
   @property({ attribute: false })
   actorRef!: ChatMachineActorRef;
 
-  @property({ type: Object })
+  @property({ attribute: false })
   padding?: Padding;
 
   @state()
@@ -197,30 +197,14 @@ class Screen extends LitComponent {
       <ios-chat-scroll
         .blockAutoScroll=${this._isTyping && !this._isBottom}
         .scrollBehavior=${this._animate ? "smooth" : "auto"}
-        .padding=${{
-          top: "0",
-          right: "0",
-          bottom: `${this._inputHeight}px`,
-          left: "0",
+        .padding=${this.padding && {
+          top: this.padding.top,
+          right: this.padding.right,
+          bottom: `calc(${this.padding.bottom} + ${this._inputHeight}px)`,
+          left: this.padding.left,
         }}
-        style=${styleMap({ paddingBottom: `${this._inputHeight}px` })}
       >
-        <ios-chat-scrollbar
-          .scrollElemRef=${this.scrollElem}
-          style=${styleMap({
-            paddingTop: this.padding?.top,
-            paddingBottom: `calc(${this.padding?.bottom} + ${this._inputHeight}px)`
-          })}
-        ></ios-chat-scrollbar>
-        <ul
-          style=${styleMap({
-            opacity: this._messages.length > 0 ? "1" : "0",
-            paddingTop: this.padding?.top,
-            paddingLeft: this.padding?.left,
-            paddingRight: this.padding?.right,
-            paddingBottom: this.padding?.bottom
-          })}
-        >
+        <ul style=${styleMap({ opacity: this._messages.length > 0 ? "1" : "0" })}>
           ${repeat(
             this._messages,
             (message) => message.id,
@@ -240,13 +224,6 @@ class Screen extends LitComponent {
   }
 
   protected static override shadowStyles = css`
-    ios-chat-scrollbar {
-      position: absolute;
-      top: 0;
-      right: 0;
-      height: 100%;
-    }
-
     ul {
       font-size: inherit;
       display: flex;
@@ -261,7 +238,7 @@ class Screen extends LitComponent {
       position: relative;
       width: fit-content;
       max-width: ${MESSAGE_WIDTH_RATIO * 100}%;
-      box-shadow: 0 0 0 2px var(--message-color);
+      box-shadow: 0 0 8px 0 var(--message-color);
       border-radius: var(--border-radius);
     }
     li.sender {
