@@ -8,6 +8,26 @@ export function delay(miliSec: number) {
   return new Promise((res) => setTimeout(() => res(true), miliSec));
 }
 
+export function cancelableDelay() {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  let cancelFnRef: undefined | (() => void);
+
+  function run(ms: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      timeoutId = setTimeout(resolve, ms);
+      cancelFnRef = () => {
+        clearTimeout(timeoutId);
+        reject("cancel delay");
+      };
+    });
+  }
+
+  return {
+    run,
+    cancel: () => cancelFnRef && cancelFnRef(),
+  };
+}
+
 export function clamp(val: number, min: number, max?: number): number {
   if (typeof val !== "number" || typeof min !== "number" || (max !== undefined && typeof max !== "number")) {
     throw new TypeError("All arguments must be numbers.");

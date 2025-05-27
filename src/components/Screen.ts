@@ -7,6 +7,7 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { styleMap } from "lit/directives/style-map.js";
 import type { Padding } from "@/lib/style-utils";
+import { classMap } from "lit/directives/class-map.js";
 
 const MESSAGE_WIDTH_RATIO = 0.75;
 
@@ -134,7 +135,7 @@ class Screen extends LitComponent {
     const messageElem = li.querySelector("ios-chat-message")!;
     const ulCStyle = window.getComputedStyle(this.ulElem);
     // style variables
-    const duration = 350;
+    const duration = 500;
     const actualScreenHeight = this.offsetHeight - inputCoor.height;
     const gapBetweenInputTopFromLi = actualScreenHeight - li.offsetTop;
     const inputPaddingY = inputCoor.height - textareaCoor.height;
@@ -204,12 +205,17 @@ class Screen extends LitComponent {
           left: this.padding.left,
         }}
       >
-        <ul style=${styleMap({ opacity: this._messages.length > 0 ? "1" : "0" })}>
+        <ul
+          style=${styleMap({ opacity: this._messages.length > 0 ? "1" : "0" })}
+        >
           ${repeat(
             this._messages,
             (message) => message.id,
             (message, idx) => html`
-              <li class=${message.role}>
+              <li class=${classMap({
+                [message.role]: true,
+                "clickable": message.contents.some(msg => msg.type === "img")
+              })}>
                 <ios-chat-message .message=${message}></ios-chat-message>
                 ${isLast(idx)
                   ? html`<div class="tail ${message.role === "sender" ? "right" : "left"}"></div>`
@@ -250,6 +256,12 @@ class Screen extends LitComponent {
       align-self: flex-start;
       background: var(--message-color);
       color: var(--theme-color);
+    }
+    li.clickable {
+      transition: ease 500ms;
+    }
+    li.clickable:active {
+      transform: scale(0.98);
     }
 
     ios-chat-message {

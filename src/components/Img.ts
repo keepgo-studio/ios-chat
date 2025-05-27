@@ -5,8 +5,17 @@ import { customElement, property, state } from "lit/decorators.js";
 
 import nullSvg from "@/assets/questionmark.folder.fill.svg";
 
+type ImgLoadedState = {
+  src: string;
+  width: number;
+  height: number;
+};
+
 const TAG_NAME = "ios-chat-img";
 
+/**
+ * @fires img-loaded
+ */
 @customElement(TAG_NAME)
 class Img extends LitComponent {
   @property({ attribute: false })
@@ -33,8 +42,15 @@ class Img extends LitComponent {
         imgSrc = this.data.src;
       }
 
-      const setSrc = (s: string) => {
-        this._src = s;
+      const setSrc = (state: ImgLoadedState | null) => {
+        this._src = state ? state.src : null;
+
+        this.fireEvent("img-loaded", {
+          success: Boolean(state),
+          width: state?.width ?? 0,
+          height: state?.height ?? 0
+        });
+
         this._loading = false;
       }
 
@@ -50,6 +66,7 @@ class Img extends LitComponent {
       </section>
     `;
 
+    // when src is unvalid or loading image is failed
     if (!this._src) {
       return html`
         <section>
@@ -92,7 +109,6 @@ class Img extends LitComponent {
       display: block;
       width: 100%;
       height: 100%;
-      object-fit: cover;
     }
   `;
 
@@ -110,9 +126,13 @@ declare global {
 }
 
 async function imageSrcResult(src: string) {  
-  return new Promise<string>((res, rej) => {
+  return new Promise<ImgLoadedState>((res, rej) => {
     const img = new Image();
-    img.onload = () => res(src);
+    img.onload = () => res({
+      src,
+      width: img.naturalWidth,
+      height: img.naturalHeight
+    });
     img.onerror = () => rej(null);
     img.src = src;
   });

@@ -1,6 +1,7 @@
 import "./components/Attachment";
 import "./components/Error";
 import "./components/Img";
+import "./components/ImgViewer";
 import "./components/Input";
 import "./components/InputPlayer";
 import "./components/Message"

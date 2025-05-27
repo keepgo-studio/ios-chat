@@ -15,7 +15,7 @@ import { styleMap } from "lit/directives/style-map.js";
 type ScrollPosition = "top" | "bottom";
 
 /**
- * @fires wheel-ratio
+ * @fires scrolling
  */
 @customElement("ios-chat-scroll")
 class Scroll extends LitComponent {

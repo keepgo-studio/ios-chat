@@ -1,4 +1,5 @@
-import type { ChatMessage } from "@/models/chat-room";
+import type LitComponent from "@/config/component";
+import type { ChatMessage, ChatMessageContentMap } from "@/models/chat-room";
 
 type AnswerMessage = ChatMessage;
 
@@ -17,6 +18,18 @@ type Recording = undefined;
 type WaveLoaded = undefined;
 type WaveRender = undefined;
 type WaveStopRender = undefined;
+
+type ImgLoaded = {
+  success: boolean;
+  width: number;
+  height: number;
+};
+
+type ImgClick = ImgLoaded & {
+  imgContent: ChatMessageContentMap["img"]["val"];
+  ref: LitComponent;
+};
+
 declare global {
   interface CustomEventDetailMap {
     "controller:answer-message": AnswerMessage;
@@ -28,6 +41,8 @@ declare global {
     "wave-loaded": WaveLoaded;
     "wave-render": WaveRender;
     "wave-stop-render": WaveStopRender;
+    "img-loaded": ImgLoaded;
+    "message-img:img-click": ImgClick;
   }
 
   /**

@@ -44,6 +44,11 @@ class Message extends LitComponent {
       word-break: break-word;
       overflow: hidden;
     }
+    ul {
+      display: flex;
+      flex-direction: column;
+      gap: .1em;
+    }
   `;
 }
 

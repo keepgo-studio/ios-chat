@@ -104,14 +104,16 @@ class App extends LitComponent {
     return this._errorMsg
       ? html` <ios-chat-error .msg=${this._errorMsg}></ios-chat-error>`
       : html`
-          <div class="root" style=${styleMap({ fontSize: this._fontSize })}>
-            <ios-chat-attachment .actorRef=${this._actor}></ios-chat-attachment>
-            <ios-chat-screen
-              .padding=${this._customScreenPadding}
-              .actorRef=${this._actor}
-            ></ios-chat-screen>
-            <ios-chat-input .actorRef=${this._actor}></ios-chat-input>
-          </div>
+          <ios-chat-img-viewer>
+            <div class="root" style=${styleMap({ fontSize: this._fontSize })}>
+              <ios-chat-attachment .actorRef=${this._actor}></ios-chat-attachment>
+              <ios-chat-screen
+                .padding=${this._customScreenPadding}
+                .actorRef=${this._actor}
+              ></ios-chat-screen>
+              <ios-chat-input .actorRef=${this._actor}></ios-chat-input>
+            </div>
+          </ios-chat-img-viewer>
         `;
   }
 

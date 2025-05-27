@@ -206,7 +206,7 @@ class Textarea extends LitComponent {
       width: fit-content;
       position: relative;
       border-radius: 1em;
-      height: 8em;
+      max-height: 16em;
       overflow: hidden;
     }
     .img-wrapper ios-chat-img {
