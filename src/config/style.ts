@@ -26,6 +26,7 @@ export const appStyleVars = css`
     --font-size: clamp(6px, 3.2vw, 15px);
     --border-radius: 1.5em;
     --input-bg: rgba(10, 10, 10, 0.75);
+    --input-record: rgba(255, 69, 58, 0.35);
     --red: rgba(255, 69, 58);
     --blue: #39a7fc;
 

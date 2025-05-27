@@ -1,20 +1,18 @@
-import type { ChatMachineActorRef } from "@/app.machine";
+import type { ChatMachineActorRef } from "@/machine/app.machine";
 import LitComponent from "@/config/component";
 import { css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { logPrefix } from "@/config/console";
 
 import PhotoSvg from "@/assets/photos.svg";
 import RecordSvg from "@/assets/mic.circle.fill.svg";
 import AudioSvg from "@/assets/waveform.circle.fill.svg";
-import { AppError } from "@/config/error";
 
 type ItemTypes = "image" | "record" | "audio";
 type Item = {
   type: ItemTypes;
   title: string;
   icon: string;
-}
+};
 
 const items: Item[] = [
   {
@@ -34,28 +32,6 @@ const items: Item[] = [
   },
 ];
 
-type ParseResult = { base64: string; mimeType: string };
-
-function fileToBase64(file: File) {
-  return new Promise<ParseResult>(res => {
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const [metadata, base64] = dataUrl.split(',');
-      const mimeType = metadata.match(/:(.*?);/)?.[1] || '';
-      res({ base64, mimeType });
-    };
-
-    reader.onerror = (e) => {
-      const msg = e.target?.error?.message;
-      throw new AppError("FILE_ERROR", msg ? msg : "Unknown file input error");
-    }
-
-    reader.readAsDataURL(file);
-  });
-}
-
 @customElement("ios-chat-attachment")
 class Attachment extends LitComponent {
   @property({ attribute: false })
@@ -71,12 +47,13 @@ class Attachment extends LitComponent {
   _blocked = false;
 
   override connected(): void {
-    this.actorRef.subscribe((snap) => {
-      if (snap.matches({ Render: { Attachment: "Disabled" } })) {
-        this._disabled = true;
-        return;
-      }
+    const snapshot = this.actorRef.getSnapshot();
 
+    this._disabled = snapshot.matches({ Render: { Attachment: "Disabled" } });
+
+    if (this._disabled) return;
+
+    this.actorRef.subscribe((snap) => {
       if (snap.matches({ Render: { Attachment: "Open" } })) {
         this._isOpen = true;
       } else if (snap.matches({ Render: { Attachment: "Closed" } })) {
@@ -94,41 +71,45 @@ class Attachment extends LitComponent {
   async changeHandler(e: InputEvent) {
     const inputElem = e.currentTarget as HTMLInputElement;
     const type = inputElem.dataset.type as ItemTypes;
-    let success = true;
 
-    switch(type) {
+    if (!inputElem.files) return;
+
+    switch (type) {
       case "image": {
-        if (!inputElem.files) return;
-
-        const results: ParseResult[] = [];
-
-        try {
-          for (const file of inputElem.files) {
-            results.push(await fileToBase64(file));
-          }
-
-          results.forEach(({ base64, mimeType }) => {
-            this.actorRef.send({ type: "ATTACH_IMAGE", imgContent: {
+        for (const blob of [...inputElem.files].reverse()) {
+          this.actorRef.send({
+            type: "ATTACH_IMAGE",
+            imgContent: {
               type: "img",
-              val: { base64, mimeType }
-            }});
+              val: { type: "raw", blob },
+            },
           });
-        } catch (err) {
-          success = false;
-          console.error(logPrefix((err as Error).message));
         }
         break;
       }
-      case "audio":
-      case "record":
+      case "audio": {
+        const blob = inputElem.files[0];
+
+        this.actorRef.send({
+          type: "ATTACH_AUDIO",
+          audioContent: {
+            type: "audio",
+            val: { type: "raw", blob },
+          },
+        });
+        break;
+      }
     }
 
     // clear input
     inputElem.value = "";
+    // close attachment
+    this.actorRef.send({ type: "CLOSE_ATTACHMENT" });
+  }
 
-    if (success) {
-      this.actorRef.send({ type: "CLOSE_ATTACHMENT" });
-    }
+  buttonClickHandler() {
+    this.actorRef.send({ type: "ATTACH_AUDIO" });
+    this.actorRef.send({ type: "CLOSE_ATTACHMENT" });
   }
 
   protected override render() {
@@ -138,22 +119,33 @@ class Attachment extends LitComponent {
       <section class=${this._isOpen ? "open" : ""}>
         <div class="background" @click=${this.clickHandler}></div>
         <ul>
-          ${items.map((item, index) => html`
-            <li>
-              <label for=${index}>
-                <ios-chat-svg .data=${item.icon}></ios-chat-svg>
-                <p>${item.title}</p>
-              </label>
-              <input
-                type="file"
-                multiple
-                data-type=${item.type}
-                id=${index}
-                accept=${`${item.type}/*`}
-                @change=${this.changeHandler}
-              />
-            </li>
-          `)}
+          ${items.map(
+            (item, index) => html`
+              <li>
+                <label for=${index}>
+                  <ios-chat-svg .data=${item.icon}></ios-chat-svg>
+                  <p>${item.title}</p>
+                </label>
+                ${item.type === "record"
+                  ? html`
+                    <button 
+                      id=${index}
+                      @click=${this.buttonClickHandler}>
+                    </button>
+                  `
+                  : html`
+                      <input
+                        type="file"
+                        ?multiple=${item.type === "image"}
+                        data-type=${item.type}
+                        id=${index}
+                        accept=${`${item.type}/*`}
+                        @change=${this.changeHandler}
+                      />
+                    `}
+              </li>
+            `
+          )}
         </ul>
       </section>
     `;
@@ -191,7 +183,7 @@ class Attachment extends LitComponent {
     ul {
       position: absolute;
       bottom: 1em;
-      left: .5em;
+      left: 0.5em;
       display: flex;
       justify-content: flex-end;
       flex-direction: column;
@@ -233,10 +225,10 @@ class Attachment extends LitComponent {
       box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.15);
     }
     label p {
-      margin-left: .8em;
+      margin-left: 0.8em;
     }
 
-    input {
+    input, button {
       display: none;
     }
   `;

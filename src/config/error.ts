@@ -7,6 +7,7 @@ type ChatErrorCode =
   | "CHAT_ROOM_BLOCKED"
   | "HTML_REF_ERROR"
   | "FILE_ERROR"
+  | "AUDIO_PLAYER_NOT_FOUND"
   ;
 
 type SupportErrorCode = ChatErrorCode;

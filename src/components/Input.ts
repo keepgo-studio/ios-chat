@@ -1,5 +1,5 @@
 import LitComponent from "@/config/component";
-import type { ChatMachineActorRef } from "@/app.machine";
+import type { ChatMachineActorRef } from "@/machine/app.machine";
 import { css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
@@ -7,6 +7,9 @@ import { customElement, property, state } from "lit/decorators.js";
 class Input extends LitComponent {
   @property({ attribute: false })
   actorRef!: ChatMachineActorRef;
+
+  @state()
+  _mode: "text" | "player" = "text";
 
   @state()
   _isAttachmentOff = false;
@@ -38,6 +41,12 @@ class Input extends LitComponent {
         } else if (snap.matches({ Render: { Attachment: "Closed" }})) {
           this._openAttachment = false;
         }
+
+        if (snap.matches({ Render: { Input: { Ready: "AudioPlayerMode" }}})) {
+          this._mode = "player";
+        } else if (snap.matches({ Render: { Input: { Ready: "TypeMode" }}})) {
+          this._mode = "text";
+        }
       });
     }
   }
@@ -63,6 +72,14 @@ class Input extends LitComponent {
   }
 
   protected override render(): unknown {
+    if (this._mode === "player") {
+      return html`
+        <section>
+          <ios-chat-input-player .actorRef=${this.actorRef}></ios-chat-input-player>
+        </section>
+      `;
+    }
+
     return html`
       <section>
         ${!this._isAttachmentOff
@@ -77,7 +94,7 @@ class Input extends LitComponent {
           : undefined
         }
 
-        <ios-chat-textarea 
+        <ios-chat-textarea
           class=${this._openAttachment ? "open" : ""}
           .actorRef=${this.actorRef}
         ></ios-chat-textarea>

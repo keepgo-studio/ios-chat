@@ -1,7 +1,8 @@
 import LitComponent from "@/config/component";
-import { easeTo, MouseCoor, springTo } from "@/lib/animate";
+import { easeTo, springTo } from "@/lib/animate";
 import type { Padding } from "@/lib/style-utils";
 import { clamp, debounce, fixedToDecimal } from "@/lib/utils";
+import MouseCoor from "@/models/mouse-coor";
 import { css, html } from "lit";
 import {
   customElement,

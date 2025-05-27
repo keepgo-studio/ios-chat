@@ -1,5 +1,5 @@
 import LitComponent from "@/config/component";
-import type { ChatMachineActorRef } from "@/app.machine";
+import type { ChatMachineActorRef } from "@/machine/app.machine";
 import { css, html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { throttle } from "@/lib/utils";
@@ -24,6 +24,9 @@ class Textarea extends LitComponent {
 
   @state()
   _maxHeight = 0;
+
+  @state()
+  _height = 0;
 
   @query("textarea")
   textareaElem!: HTMLTextAreaElement;
@@ -55,9 +58,10 @@ class Textarea extends LitComponent {
     const el = this.textareaElem;
 
     el.style.height = "auto";
-    if (el.value.length > 0) {
-      el.style.height = `${el.scrollHeight}px`;
-    }
+    const h = el.scrollHeight;
+
+    el.style.height = `${h}px`;
+    this._height = h;
   }
 
   sendMessage() {
@@ -105,7 +109,7 @@ class Textarea extends LitComponent {
     }
     this.syncTextareaHeight();
     this.setShowBtn();
-  }, 150);
+  }, 100);
 
   protected override render() {
     return html`
@@ -125,24 +129,29 @@ class Textarea extends LitComponent {
           </div>  
         ` : undefined}
 
-        <div>
-          <div 
-            class="typing-area"
-            style=${styleMap({
-              maxHeight: this._maxHeight > 0 ? `${Math.ceil(this._maxHeight)}px` : "",
-            })}
-          >
-            <textarea
-              rows=${1}
-              placeholder="Chat"
-              ?disabled=${this._blocked}
-              @keypress=${this.keyHandler}
-              @focus=${this.focusHandler}
-              @input=${this.inputHandler}
-              autofocus
-            ></textarea>
-          </div>
-        </div>
+        <ios-chat-scroll
+          style=${styleMap(this._maxHeight <= 0 ? {} : {
+            maxHeight: this._maxHeight < this._height 
+              ? `${Math.ceil(this._maxHeight)}px`
+              : `calc(1.2em + ${this._height}px)`,
+          })}
+          .padding=${{
+            top: "0.6em",
+            right: "1em",
+            bottom: "0.6em",
+            left: "1em"
+          }}
+        >
+          <textarea
+            rows=${1}
+            placeholder="Chat"
+            ?disabled=${this._blocked}
+            @keypress=${this.keyHandler}
+            @focus=${this.focusHandler}
+            @input=${this.inputHandler}
+            autofocus
+          ></textarea>
+        </ios-chat-scroll>
 
         <div class="btn-wrapper">
           <button
@@ -176,6 +185,22 @@ class Textarea extends LitComponent {
       gap: 0.25em;
       grid-column: 1/3;
     }
+    .attached::-webkit-scrollbar {
+      width:  0.6em;
+      height: 0.6em;
+    }
+    .attached::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar);
+      border-radius: 999px;
+      background-clip: padding-box;
+      border: 0.15em solid transparent;
+      cursor: pointer;
+    }
+    .attached::-webkit-scrollbar-track {
+      background-color: transparent;
+      border-radius: 999px;
+    }
+
     .img-wrapper {
       flex-shrink: 0;
       width: fit-content;
@@ -225,18 +250,13 @@ class Textarea extends LitComponent {
       background-color: #fff;
     }
 
-    .typing-area {
-      overflow-y: auto;
-    }
-    
     textarea {
-      padding: 0.6em 1em;
       display: block;
-      overflow: hidden;
       width: 100%;
       font-size: inherit;
       line-height: 1.2em;
       color: var(--theme-color);
+      background: none;
       outline: none;
       border: none;
       caret-color: #1588fe;
@@ -251,6 +271,7 @@ class Textarea extends LitComponent {
     }
 
     .btn-wrapper {
+      align-self: flex-end;
       display: flex;
       align-items: center;
       justify-content: center;

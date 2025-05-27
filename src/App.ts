@@ -3,7 +3,7 @@ import {
   appMachine,
   checkAppValid,
   type ChatMachineActorRef,
-} from "@/app.machine";
+} from "@/machine/app.machine";
 import { css, html } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { createActor } from "xstate";
@@ -14,7 +14,7 @@ import { styleMap } from "lit/directives/style-map.js";
 export type AppAttributeKey = "room-id" | "padding" | "mode" | "font-size";
 
 /**
- * 모든 ChatController 코드는 machone(chat.machine.ts)에 넣었음
+ * 모든 ChatRoomController 코드는 machone(chat.machine.ts)에 넣었음
  */
 @customElement("ios-chat")
 class App extends LitComponent {
@@ -102,7 +102,7 @@ class App extends LitComponent {
 
   protected override render() {
     return this._errorMsg
-      ? html` <ios-chat-error .msg=${this._errorMsg}></ios-chat-error> `
+      ? html` <ios-chat-error .msg=${this._errorMsg}></ios-chat-error>`
       : html`
           <div class="root" style=${styleMap({ fontSize: this._fontSize })}>
             <ios-chat-attachment .actorRef=${this._actor}></ios-chat-attachment>

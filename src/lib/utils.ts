@@ -60,11 +60,6 @@ export function pxToNumber(pxStr: string) {
   return Number(pxStr.split("px")[0]);
 }
 
-export async function urlToBlob(blobUrl: string) {
-  const res = await fetch(blobUrl);
-  return await res.blob();
-}
-
 export function linkify(text: string) {
   const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/ig;  
   const parts = text.split(urlPattern);
@@ -82,4 +77,11 @@ export function linkify(text: string) {
   }
 
   return htmlArr;
+}
+
+export function range<T = unknown>(length: number, val?: T): T[] {
+  return Array.from({ length }).map(() => {
+    if (typeof val === "object") return { ...val };
+    return val as T;
+  });
 }

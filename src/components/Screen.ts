@@ -1,4 +1,4 @@
-import type { ChatMachineActorRef } from "@/app.machine";
+import type { ChatMachineActorRef } from "@/machine/app.machine";
 import LitComponent from "@/config/component";
 import { delay, pxToNumber } from "@/lib/utils";
 import type { ChatMessage } from "@/models/chat-room";

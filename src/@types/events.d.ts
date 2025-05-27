@@ -11,6 +11,12 @@ type Scrolling = number;
 type ScrollTo = {
   y?: number;
 };
+
+type Recording = undefined;
+
+type WaveLoaded = undefined;
+type WaveRender = undefined;
+type WaveStopRender = undefined;
 declare global {
   interface CustomEventDetailMap {
     "controller:answer-message": AnswerMessage;
@@ -18,6 +24,10 @@ declare global {
     "fire-toggle": FireToggle;
     "scrolling": Scrolling;
     "scroll-to": ScrollTo;
+    "recording": Recording;
+    "wave-loaded": WaveLoaded;
+    "wave-render": WaveRender;
+    "wave-stop-render": WaveStopRender;
   }
 
   /**

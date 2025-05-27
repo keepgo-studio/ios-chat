@@ -22,6 +22,10 @@ class Spinner extends LitComponent {
   }
 
   protected static override shadowStyles = css`
+    :host {
+      display: block;
+    }
+
     div.spinner {
       width: 100%;
       height: 100%;

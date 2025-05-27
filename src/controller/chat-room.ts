@@ -12,28 +12,28 @@ export type MessagePayload = Omit<ChatMessage, keyof ChatMessageMeta | "role">;
 export type SupportChatMode = "text-only" | "normal";
 
 /**
- * ChatController는 다중 ChatRoom 인스턴스를 관리하는 싱글턴 클래스입니다.
+ * ChatRoomController는 다중 ChatRoom 인스턴스를 관리하는 싱글턴 클래스입니다.
  * 
  * 이 클래스는 ChatRoom의 생성, 제거, 메시지 추가, 구독 등의 주요 기능을 제공합니다.
  * ⭐️ 채팅 앱(App.ts)과 내부 핸들러(handler.ts)의 중간 계층으로 작동합니다.
  * 
  * @example
  * // ChatRoom 생성
- * ChatController.createRoom("room-123", elementRef);
+ * ChatRoomController.createRoom("room-123", elementRef);
  * 
  * // 메시지 추가
- * ChatController.addMessage("room-123", {
+ * ChatRoomController.addMessage("room-123", {
  *   type: "text",
  *   role: "sender",
  *   content: "안녕하세요!"
  * });
  * 
  * // 메시지 구독
- * ChatController.subscribe("room-123", (msg) => {
+ * ChatRoomController.subscribe("room-123", (msg) => {
  *   console.log("New message:", msg);
  * });
  */
-export default class ChatController {
+export default class ChatRoomController {
   private static _rooms: Map<ChatRoomId, ChatRoomModel> = new Map();
 
   static createRoom(roomId: ChatRoomId, roomRef: LitComponent) {

@@ -10,7 +10,7 @@ class MessageText extends LitComponent {
 
   protected override render() {
     return html`
-      <p>${this.val}</p>
+      <p @mousedown=${(e: Event) => e.stopPropagation()}>${this.val}</p>
     `;
   }
 
@@ -18,6 +18,7 @@ class MessageText extends LitComponent {
     p {
       padding: 0.6em 1em;
       line-height: 1.2em;
+      min-height: 2em;
       width: fit-content;
       white-space: pre-line;
       user-select: text;

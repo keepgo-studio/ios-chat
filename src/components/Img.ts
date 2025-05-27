@@ -7,34 +7,6 @@ import nullSvg from "@/assets/questionmark.folder.fill.svg";
 
 const TAG_NAME = "ios-chat-img";
 
-function base64ToBlob(base64: string, mimeType: string): Blob {
-  const binary = atob(base64);
-  const length = binary.length;
-  const bytes = new Uint8Array(length);
-
-  for (let i = 0; i < length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-
-  return new Blob([bytes.buffer], { type: mimeType });
-}
-
-async function imageSrcResult(src: string) {  
-  return new Promise<string>((res, rej) => {
-    const img = new Image();
-
-    img.onload = () => {
-      res(src);
-    };
-
-    img.onerror = () => {
-      rej(null);
-    };
-
-    img.src = src;
-  });
-}
-
 @customElement(TAG_NAME)
 class Img extends LitComponent {
   @property({ attribute: false })
@@ -54,11 +26,11 @@ class Img extends LitComponent {
 
       let imgSrc = "";
 
-      if ("src" in this.data) {
+      if (this.data.type === "raw") {
+        const { blob } = this.data;
+        imgSrc = URL.createObjectURL(blob);
+      } else if (this.data.type === "url") {
         imgSrc = this.data.src;
-      } else {
-        const { base64, mimeType } = this.data;
-        imgSrc = URL.createObjectURL(base64ToBlob(base64, mimeType));
       }
 
       const setSrc = (s: string) => {
@@ -73,16 +45,16 @@ class Img extends LitComponent {
 
   protected override render() {
     if (this._loading) return html`
-      <div class="wrapper">
+      <section>
         <ios-chat-spinner></ios-chat-spinner>
-      </div>
+      </section>
     `;
 
     if (!this._src) {
       return html`
-        <div class="wrapper">
+        <section>
           <ios-chat-svg .data=${nullSvg}></ios-chat-svg>
-        </div>
+        </section>
       `;
     }
 
@@ -96,7 +68,7 @@ class Img extends LitComponent {
       height: 100%;
     }
 
-    .wrapper {
+    section {
       width: min(10vw, 160px);
       min-width: 60px;
       aspect-ratio: 1 / 1; 
@@ -104,14 +76,14 @@ class Img extends LitComponent {
       align-items: center;
       justify-content: center;
     }
-    .wrapper:has(ios-chat-svg) {
+    section:has(ios-chat-svg) {
       background-color: var(--theme-color);
     }
-    .wrapper ios-chat-spinner {
+    section ios-chat-spinner {
       width: 2em;
       height: 2em;
     }
-    .wrapper ios-chat-svg {
+    section ios-chat-svg {
       width: var(--font-size);
       fill: var(--theme-bg);
     }
@@ -135,4 +107,13 @@ declare global {
   interface HTMLElementTagNameMap {
     [TAG_NAME]: Img;
   }
+}
+
+async function imageSrcResult(src: string) {  
+  return new Promise<string>((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(src);
+    img.onerror = () => rej(null);
+    img.src = src;
+  });
 }

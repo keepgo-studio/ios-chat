@@ -1,12 +1,12 @@
 import { assign, setup, type ActorRefFrom, type SnapshotFrom } from "xstate";
-import LitComponent from "./config/component";
-import type { ChatMessage, ChatMessageContent, ChatMessageContentMap } from "./models/chat-room";
-import type { ChatRoomId } from "./lib/data-structure";
-import type SupportChatMode from "./controller/chat";
-import ChatController from "./controller/chat";
-import { AppError } from "./config/error";
-import { logPrefix } from "./config/console";
-import type { AppAttributeKey } from "./App";
+import LitComponent from "@/config/component";
+import type { ChatMessage, ChatMessageContent, ChatMessageContentMap } from "@/models/chat-room";
+import type { ChatRoomId } from "@/lib/data-structure";
+import type SupportChatMode from "@/controller/chat-room";
+import ChatRoomController from "@/controller/chat-room";
+import { AppError } from "@/config/error";
+import { logPrefix } from "@/config/console";
+import type { AppAttributeKey } from "@/App";
 
 export function checkAppValid(roomRef: LitComponent) {
   // check room-id attribute
@@ -28,7 +28,7 @@ export function checkAppValid(roomRef: LitComponent) {
   console.info(logPrefix(`Initializing chat room (id: "${roomId}", mode "${mode}")`));
 
   // create chat room via controller
-  ChatController.createRoom(roomId, roomRef);
+  ChatRoomController.createRoom(roomId, roomRef);
 
   return {
     roomId: roomId as ChatRoomId,
@@ -51,7 +51,10 @@ interface Context {
   };
   inputCoor: {
     height: number;
-  }
+  };
+  inputAudio: {
+    data?: ChatMessageContentMap["audio"],
+  };
   error: string | null;
   cachedMessageContents: ChatMessageContent[];
   messages: ChatMessage[];
@@ -62,7 +65,6 @@ type Events =
   | { type: "RESIZE_APP"; width: number; height: number }
   | { type: "OPEN_ATTACHMENT" }
   | { type: "CLOSE_ATTACHMENT" }
-  | { type: "RESET_INPUT" }
   | { type: "SEND_MESSAGE" }
   | { type: "ANSWER_MESSAGE" }
   | { type: "SYNC_MESSAGE" }
@@ -72,7 +74,9 @@ type Events =
   | { type: "DETACH_IMAGE"; index: number; }
   | { type: "RESIZE_INPUT"; height: number; }
   | { type: "ATTACH_IMAGE"; imgContent: ChatMessageContentMap["img"] }
-  | { type: "ATTACH_AUDIO"; audioContent: ChatMessageContentMap["audio"] }
+  | { type: "ATTACH_AUDIO"; audioContent?: ChatMessageContentMap["audio"] }
+  | { type: "APPEND_AUDIO"; audioContent: ChatMessageContentMap["audio"] }
+  | { type: "DETACH_AUDIO"; }
   | { type: "LOADING_START" }
   | { type: "LOADING_END" }
   | { type: "TERMINATE" }
@@ -100,6 +104,11 @@ export const appMachine = setup({
     }),
     assignMode: assign({
       mode: (_, params: { mode: SupportChatMode }) => params.mode
+    }),
+    assignInputAudio: assign({
+      inputAudio: (_, params: { audioContent?: ChatMessageContentMap["audio"] }) => ({
+        data: params.audioContent
+      })
     }),
     unshiftMessageQueue: assign({
       cachedMessageContents: ({ context }, params: { content: ChatMessageContent }) => ([
@@ -132,19 +141,19 @@ export const appMachine = setup({
       inputCoor: (_, params: { height: number }) => ({ ...params })
     }),
     assignMessages: assign({
-      messages: ({ context }) => ChatController.getMessages(context.roomId!)
+      messages: ({ context }) => ChatRoomController.getMessages(context.roomId!)
     }),
     sendMessage: ({ context }) => {
       const { roomId, cachedMessageContents } = context;
 
-      ChatController.sendMessage(roomId!, {
+      ChatRoomController.sendMessage(roomId!, {
         origin: "app",
         contents: cachedMessageContents
       });
     },
     removeChatRoom: ({ context }) => {
       const { roomId } = context;
-      ChatController.removeRoom(roomId!);
+      ChatRoomController.removeRoom(roomId!);
     }
   },
   guards: {
@@ -152,7 +161,7 @@ export const appMachine = setup({
     "is text only mode": ({ context }) => context.mode === "text-only",
   }
 }).createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QGMAWBDALgYgCoFEAlAWQEkA5AQQIG0AGAXUVAAcB7WAS007YDtmIAB6IAtAEZxAJgB0ANgCcAdikBmJUoAcdBVN0AaEAE9ESuqpmqpmqXoUBWBdvEBfF4bRYZhMHwhgAJxlSPhYAVxwAGQB5SgARCgBxAH0AZVxKQlx6JiQQdi4efkERBAU5TRlyrT0rLXFHQxMEcSVVABZLcVV7TTl7JX6le3s3DwxMb19-IJDwyZ90CCNsVPxyOOTifFTUykT8HMEC7l4BPNLxcpklcvt+hXa6dq06KSbEcU1pS377cyUV3EijGIE8C2mgWCoQiUyWRhkuCMLDAxDY-mw1AyAGEABLJSgAVQS0SOeRORXOoFKbSUVTe7VU1SZjgUHxamgUChkVy5cm6UjocikDVB4Kmfihc1hi2WiORqPRYGwcXwOPxpGI+0OjGOHFOxQupmsMkFZi0CnE7X+jPZIv5liFA009na7WB1rFEwlM2h8zhcqRKLR-mCEAANsqCAANXDJCgABUJ2V15P1lJKiCkih59lUqnM1nMcjo5jt5m5w36dHEpe6jKkXq8PklsxhEPh8uDSq7nD4UDw+FjyXWBEIZNY6bOmYQ7osthLDlaDhd7XLvRkNjkTOGCh09yUTYhrb9MrAnaDitDQb7A5jccIOzVE-yU8N1M+UnsPKumk0L1Ubc6BsTRyyZG57nab53QUdR7iPH0pXbAMEUoMIIF4BNw3QIxAhDZVHzWONE2TF8KWnI0ECUdo5BkN1YLNQC5EUJR13EeQ92zOhBlLa1RncMFvRbX1pUmAAhcM2GQABrSBsBieIkhHDYyLfKlhEQf9OnzPR2l0L5hikVjjE+b5ZEAkYASBCpNAQ4SoUoTBMHQNAAFtfCiWIEnIFJ0kyFNcknQoKI-BBRFUP9TW+FRJFsa1BnZBonBuAsnlUL5bHsNQ7MhIJHOctyPOwIRYGczAwBkdAADNyoCAAKOgAEpsHFey8qclzUHcvhMFU4L3w0sKKlo-MdFrIUrB6YzmgaLRLHdc1ekGKwcpPfLOu6nASrKirqtqhrmta3KZHWwqepocRAtffr1NKUQWKitKrG6YZ1ES7d2JsK5+SmkUFFW31Tq6jyZGxSTYDk6IE3WAlcHVbZyACvUbpne6rk3EV2j0EU-sS6jaOAuhHC0ZinhGAGHI6s7JmiFE+ExOHKDxeMtQOPqDVusR0s6WwifdIVnmtIzEv0mRHBo+4bHsboIop9qCuBnqZFp3wGfVAliVIUlUyCjnUeeui9BdS0S1i6bTMFG5rL0zld348Zm2OoHNuVunsGxGI1lh+HR3ZjNKPutR5AGdQrQivpHkS7RaN6f8-xdTRDLlk6qcV8TJJkuSFO8lJ1jiP2QsG0QBm-PTGQqa1umkcR3r6U0HDkGiCxUb57cEx2T1SZAAjAVXs6UvysgLgaaTeXNhSFI3hRdRKBTo-kzL-J5+kbASjs77ve74FDVjzrYdj2NmdeuvXKIW+ROUXQVrQqc2Wl5MXFFdR4pBeGjXDXoTjq7nvfB31IACa5BsT712NqYenMEBqFooKL8thLTWCuAMRKgp2JWF5uYP8T9bKfw7r6H+W8d6UHIKkAA6kQUBh8dRXXIiPRAc46JmETs8Gstx0r2ESh0b82ZdD5j-JNHoycCF-1lAiBM6A+w8H7MVUqWBdo1UCAdFqX8N6-23qImQ4jJG3ggTOGWPJSzUWUE-W40hOGMnnlxEU0sXRvCEZvER545SUD4JwVyWBbwyJ2pVBR9UmrKLwVCYR6inGoVce4qRUBdGUQLDAhBsFAT7keBwkyLQaJ0kUONIybooJ6XsWomQkQ2BLE8f3Hyyl87H1oZAxJMgawOB0NRaW-IUEqFzO6PMjhrAMWTtiNgbAAjYEIqQAAWvgAkCYEzRNCvdTQFhE61i-NaaOGgUENCis6V+WUsbZl6f0oIPguAAC9PHbTkT4-a-x-Hr19H0gZUxjk6KqWpVGzg6k8OBC3aOoFUkCnnNIRuWVE7R1UMnUSdzBnDLGfGcgSYkZphRgHPQtEW4dCeK-HQcy5BrJGq6AUbw9zcRwQ7Y8Il2wQoeZwE50iznlQuYo2sh0VFkvmBSw5VKnk0JeQHGCpoGhui+AvTksFOFBxxioMaUEuQfxJSdFgLBUjOQCDgbEj5qDjMINEaIxBplF2YpUYVLxkmDDkKs1Jhl6S1DdDWA8q8BJ8CVPAPI4JkanxmbWH4LC6z-myXpdkP1g5fB9YoN4-45auv9jM8onQvU1h9dRP1qSEl1KfjWHQgo5lgvbBGwud0vibmcA0bMgFLQqHeoBH8IwRiv1aBodoWb-SiJzXQqB3JJBOH-G0ICIE8ZB35CMQEPRsz9AbWeC8Cp8LNpqXSdtS8u0Fh7b8zk35pZ1oSYKHooLcGkqQo20JXYrwVVIBGMAU6ZwFnYhoImcVdA22Qb8pwPNTUVFaBFPM-1t2ITbHu8d3ZrzIlvGeyi2MU1tHUM+ms7xUkih+PyXJroiWulHR2QME6exiRctJIDoU8ydD6JyGi+lyg9BFnMuptb+hQWxnoZDKETroUwthXCARJ0IrdYNMDVQOnblSrUVQIs5rAmlX+Iy0sjK0Y0RhmS2GOPAVNEWS0bwr1QZmt8dikgRiJybtWj9sq2qnnTlJWSEAZOXFLBYV0vRTXpW4mJqOPwLL-FDibXT7cd3yw2h5UzYgTZ1KeN6rGCa2S-KgpUMaZhTV5g0MMZOzsQZgw4JAbzYU2iVC-HMq0jSMv8d+fjOp2hiZ9EbkTWLqcXYq3UtU-WyUVCWmUK-Ot3QUkzTy4TQrpMSufv03FpWcROCwHQAAI0jCZtjkai74b86WONgX6KJRLmLUttg+g0X6DKtzX6U4KxdhJIzSWxu5q5nmG4xYKxmC+FlWucTIJARbqKLr38HGVe5aFdQBjuJ6UGA4Uxr9EoMkfkuCVehzT5MIU2g7LaXTvaMV9gYCDZ6eqfvmdKb6XSg8cZ2Y9kZkvdAJqld0CySyZUSqtnkim1DARFInQ8D3VFg-3VonqgGIeQOzJUHJihdIDFLMFmayPNzMWnooJkQp0chM7C4txHj+zJZvlUJh9WlzukbiT5iZPFkLqpxoMXhTikYRlyzmcXarZ9EHcwpka5fmoNNFwr80hLQ2FXnp46ELkuiH-NyN4mTTXWG+bPIyNwXQmo6A0QRtPbn7JkIqtgLA3caG5F+Lh2goK3xrlb9KlgqxZXMN0R4W7ncnjZXADlBvdbjbug8Oi9wX5addGavnIorZGTTW0JrxKNv6fBfst36S+WugJ0KrkOWZrSANXipKXxpDIYpdH2PhueU1hO4MTGyz-zYvT576OtZ7gvrdNPyP7LqVQDdzwvlRkrjmDLqWZrnwrB0HkG6aW6LX6v3zxtyg8rFXoGVW774tEE7ExEo9DfDsiAgGqAgOAdAOAjDbgIT4B+Bu49Dfj8qAj1CMg6CW7NDna5gX4AjSr8huBuBAA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QGMAWBDALgYgCoFEAlAWQEkA5AQQIG0AGAXUVAAcB7WAS007YDtmIAB6IAtAEZxAJgB0ANgCcAdikBmJUoAcdBVN0AaEAE9ESuqpmqpmqXoUBWBdvEBfF4bRYZhMHwhgAJxlSPhYAVxwAGQB5SgARCgBxAH0AZVxKQlx6JiQQdi4efkERBAVzGSVxOQAWGrlzOql7cUMTBHFtWTlNBRqlexqFVTlR13cQT0xvX38gkPDpn3QII2xU-HI45OJ8VNTKRPwcwQLuXgE80qlxe0q6JRrpTU16pzopNsRxBTklGQc4hUkh+ozo9jcHgwS1mgWCoQiMxWRhkuCMLDAxDY-mw1AyAGEABLJSgAVQS0ROeTORUuoFKwJkkjoH2kIysNXsXwQUnM-2amlUCmUalUqnBkMm0JmfjhC0Ry1WqPRmOxYGwcXwBOJpGIh2OjFOHHOxSupkkMie9Qa-R6im5tmFljk9jo1T6PSUqk0kqmMrm8MWSKVaIxWP8wQgABt1QQABq4ZIUAAKpOyhupxtpJUQzVkIzoLxqrykKmtDqB-004iGQpqdHr9ikNV90p8svmCJhyOVYbVvc4fCgeHwCeSmwIhCprCzFxzCCFcktYr+fyeDgrvxkRcFjmGozkra87YD8u7IZV4bAA6HI7HhD2Wun+Vnpvp30LllL1r0mj+egrDRtxrBQfhsXlNAhCY-RPOUu2DFFKDCCBeGTKN0CMQIrw1LVKCJElyVISkMxnQo5zNBAek0SwqkGOoHnsexRgrF4ARaPobG9TlCyPGEO0DREACEozYZAAGtIGwGJ4iScctmfGlyPfBAvVkXRbRsatrDkT5jG+TQlAUGR7BGKiXhM0YpF4-04UoTBMHQNAAFtfCiWIEnIFJ0kydNclIk06WEMR6xqJl7CqRQ6kcQzdPaXlxAsZRQISl5Cz6azYKCOyHOc1zsCEWAHMwa90AAM2KgIAAo6AASmwGDYSy+zHNQFy+EwBTX0C0pRDMWReTkVR7EFP8Bi9bkfmGYzyieTSdK9JQMsamRspatqcAKoqSvKwJqrqhr+NW3L2pocQ-JfMi3yChBeoSsKONudRSxMh0G3+B46H-cFhoaKCoWPZajta1yZHxETYEk6Jk02ElcG1XZyF8o1Lu6sRBruRRPQGIaqmqCs5HEL9hkLJjXX6JbDua47pmiDE+FxOG8J1PUjk6lH51EVQfhkD4mxmmtRnqB1VE5SxxAbW4+jdQVFugttAap4H2pkWnfAZ7UCIpNmAo58VQpuUtq3ZUsHFUB1mgscXlF6UsBm0Q85YBymcqVmm6ewfEYg2WH4YnbXswo0RBqMkzrB+JQdKFVo9J5WxCZlybGK9YYW0dviAyB9aZGE0SJIgKT3NkzY4n9pTrtERxCZGJxqg0YsxSUCs3WMuocZZRxRQpgNUmQAIwDV6SPK8jIslLq6GQ+MKdM+38dMgiaEtkepOmeV5PqbLu4R7vvfAQ9Zi52PYDlZkiLp1iinn+Hpfh0XlOU9BenSYhwhhqZtHgJzegm3-u+D31IACa5B8SH32PqMeqMeQjBkLyPMehng-HChNeKX5bAsm9H+BwPo042W-r3X+e9KDkFSAAdSIKA4+BpzqKXHogJ4Fh+iFjMPWIEwxbgTRFncKQihRQvCsGKP6Uonbd3wbvRUKJkzoEHDwW8m0sDbQqnteq8t+I-zEWAHskjpGDigBA+cCVLYskeMoRQ4VQKxW+CLBhOkGg3BaJBD4X8ZBqL-uIlafBOBOSwDo-KhV5EyDKoo2qyjhFb1Ea4jRSpKAeK8TI3Rp8aGQPFEueBeh1BW0cJyCa9Qr6gRZN+OorwFBOJcTISIbAVg+MHkXeSCSurziqHQHmiCdCPBaATZBKgwpPBMh3XoVgnH4jYGwAI2AHypFIAALXwCSZMyY9GBz+E0qoXNlBtL+CoDhzRKhFhFm6N0NQBk4MyqDYZQQfBcAAF4+LkcVAJO0qqumCQdAMQyRkzCuTohZyleoGW3IoNKbpajVDNjHGsYpKi3D0D0TkTYehOLPG80Z4ypkzJTGmb55c-iExArcWFxZXjR3aNUV09xhQqHUOYaQVljnLURWcj5nBrmyL8XcwJu1xb7RUaeLsSLGXMvidQ+pgdDIWEGjpJsQpuFjQmmNYyPQmLSCYryEY1lKAsBYKkByAQcD4gfNQGZhBojRGIJinqoxqK9D6IZTkEcNncgGGpD4KcWFMRUAi+CbikIoTYGhDCWE1S4jmQfMkWs6nswoqleQdcWidBUDbfGKTmj1GGtYQs4wJh8DVPAPIUxkbnx+eLUsAI8WumqDYl03ICZivYk2bQrpim0o7PmgOPykolsGGWyyowuQx2GO9TGBkbhujFDS-66c4KLBbWXHqQ1o0W0pYvKosrbhMl6MvLmOlbDYPHbggS552j+VbddaQX4P46ScP+cooLiUGSMvFa+zYRQOA9UGNxoZVT+GnbQyiTSrDntnioBQr0IXhXmpe5hstd0nLPAhXsn7rykGjGAb9kDrChWtuLRsxZBoWJ5NSr8BN4pPGbIKV9CpIkog-VeG8UBUPzmejA4xPw1Ay0FubUlfwrAjXFkxVQ5GD3wZo4JRyYl6MUXsTzCOdbiyHOsHhg2hMHjTwwXxsdQiJ2djfZRlayFULoUwgEK84nlJVH+LiwpB5wqaArNUGB1gcZqA+LYATcGRPiRM9dNp8hxbix0ockCwGwW-CXGYIEjRSxAmsK5nO4lICeYZMNeQONejSw+OoCaXR5DroGLWA8qdoMKxdutBLYg2Edu4uW7hlbgsVD2UNQUQoWQJScZnEGYMODxczBGn5uWmQN38zcIaAEY43AJkTcUkEXQNlGK1xWWdVaBUSRzK08gZuwqqNwvQva4rVCrmkkm03rRzeKyDOInBYDoAAEYxggKVm6fCKtdorTt74womlr0OUNQaySd0ab3W15WsW873c5ooYyhlwSOkpT0JuhM6Jt3BLoMUJTwn3fUEyIxQwI4OEMtIGoE0PihWfmF70Y0XSo53hE5E93IKY4eNj0xeO8MglkJ9X4ybPp7f402kRVO4NIZjPdhKS5zANlmhFZzr2OjWiZHkpzNg41Qf+yc0pbitHtR0fd7h1E6hvD0LalkQXiVigsH+SymCmsO0K6o8JcHomeO8UOe798ARmF6EBloTxajZNGHLotk2bgGWVy8sJ-PymVOd91gtXnoFVFGilMwdZkHNzUJyZo0hQLgUGWc0Hu5-nlFS9Ub3N7visZgeZHQwpbjDQKyr5afKtVsBYKDu1PMHCDXMCMaFcgOFPG3FocUDXkqCND0EPlFymVa+j8e819QYHV9uNUOxmywVyZgY9OFk2mJ17H-upFef+-irzFKv4SCwV8ZgToD3AsWTwt55OiIjfMDN9bxHJk6HVl2uYRNLjy5agNrpqdB-Z770rvKT4Cqg61BioCLbYugqDDSyqMQ8zoKDDsjxogHSjqqaraqYB552aQSQTKAPC7jVgOqdAD6IIiwOCMSDTWT4B+Cg5DR3B4pmbViHI6AE4xxhZhQ-DoKGSgSfxuAuBAA */
   id: "chat",
 
   context: {
@@ -170,6 +179,7 @@ export const appMachine = setup({
     inputCoor: {
       height: 0
     },
+    inputAudio: {},
     error: null,
     cachedMessageContents: [],
     messages: []
@@ -238,9 +248,17 @@ export const appMachine = setup({
 
                 AudioPlayerMode: {
                   on: {
-                    RESET_INPUT: {
+                    DETACH_AUDIO: {
                       target: "TypeMode.Back",
                       reenter: true
+                    },
+
+                    APPEND_AUDIO: {
+                      target: "AudioPlayerMode",
+                      actions: {
+                        type: "appendMessageQueue",
+                        params: ({ event }) => ({ content: event.audioContent })
+                      }
                     }
                   }
                 },
@@ -296,10 +314,9 @@ export const appMachine = setup({
 
                 ATTACH_AUDIO: {
                   target: "Open",
-
                   actions: {
-                    type: "appendMessageQueue",
-                    params: ({ event }) => ({ content: event.audioContent })
+                    type: "assignInputAudio",
+                    params: ({ event }) => ({ ...event })
                   }
                 },
 

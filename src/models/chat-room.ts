@@ -16,8 +16,8 @@ type ChatMessageBase = {
 
 type ContentMap = {
   text: string;
-  img: { base64: string; mimeType: string; } | { src: string; };
-  audio: { base64: string; mimeType: string; duration?: number } | { src: string };
+  img: { type: "raw", blob: Blob; } | { type: "url", src: string; };
+  audio: { type: "raw", blob: Blob, duration?: number } | { type: "url", src: string };
   loading: undefined;
 };
 
