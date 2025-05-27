@@ -15,7 +15,7 @@ import pauseSvg from "@/assets/pause.fill.svg";
 import stopSvg from "@/assets/stop.fill.svg";
 import sendSvg from "@/assets/arrow.up.circle.fill.svg";
 
-export type PlayerModeType = "paused" | "playing" | "recording";
+type PlayerModeType = "paused" | "playing" | "recording";
 
 const TAG_NAME = "ios-chat-input-player";
 
@@ -117,7 +117,7 @@ class InputAudio extends LitComponent {
             },
           });
         }
-        this.actorRef.send({ type: "DETACH_AUDIO" });
+        this.actorRef.send({ type: "SEND_MESSAGE" });
       },
     });
 

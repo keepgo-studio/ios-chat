@@ -131,7 +131,8 @@ class Screen extends LitComponent {
     const recentMessage = this._messages[this._messages.length - 1];
     const li = this.lastMessageElem;
     const isSender = recentMessage.role === "sender";
-    const isStaticSize = recentMessage.contents.some(c => c.type === "img");
+    const isImgContain = recentMessage.contents.some(c => c.type === "img");
+    const isAudioContain = recentMessage.contents.some(c => c.type === "audio");
     const messageElem = li.querySelector("ios-chat-message")!;
     const ulCStyle = window.getComputedStyle(this.ulElem);
     // style variables
@@ -145,12 +146,18 @@ class Screen extends LitComponent {
 
     // before painting recent ios-chat-message
     const beforeAnimate = () => {
-      li.style.maxWidth = !isStaticSize ? "none" : "";
+      li.style.maxWidth = !isImgContain ? "none" : "";
 
       li.style.zIndex = isSender ? "99" : "";
       li.style.color = "var(--theme-color)";
       li.style.background = "var(--textarea)";
-      li.style.width = (isSender && !isStaticSize) ? `${textareaCoor.width}px` : "";
+      if (isImgContain) {
+        li.style.width = "";
+      } else if (isAudioContain) {
+        li.style.width = isSender ? `${messageMaxWidth}px` : "";
+      } else {
+        li.style.width = isSender ? `${textareaCoor.width}px` : "";
+      }
       li.style.transform = `translateY(${y}px)`;
     }
 
@@ -158,14 +165,15 @@ class Screen extends LitComponent {
     // animate li and scroll to bottom
     const animate = () => {
       // style variables
+      const maxMessageWidth = messageMaxWidth * MESSAGE_WIDTH_RATIO;
       const actualMessageWidth = messageElem.offsetWidth + 1; // +1px for prevent breaking line
-      const messageWidth = Math.min(actualMessageWidth, messageMaxWidth * MESSAGE_WIDTH_RATIO);
+      const messageWidth = Math.min(actualMessageWidth, maxMessageWidth);
 
       li.style.transition = `var(--ease-out-quart) ${duration}ms`;
 
       li.style.color = isSender ? "#fff" : "";
       li.style.background = isSender ? "var(--blue)" : "var(--message-color)";
-      li.style.width = (isSender && !isStaticSize) ? `${messageWidth}px` : "";
+      li.style.width = (isSender && !isImgContain) ? `${messageWidth}px` : "";
       li.style.transform = `translateY(0px)`;
     }
 
@@ -214,7 +222,8 @@ class Screen extends LitComponent {
             (message, idx) => html`
               <li class=${classMap({
                 [message.role]: true,
-                "clickable": message.contents.some(msg => msg.type === "img")
+                "clickable": message.contents.some(msg => msg.type === "img"),
+                "audio": message.contents.some(msg => msg.type === "audio")
               })}>
                 <ios-chat-message .message=${message}></ios-chat-message>
                 ${isLast(idx)
@@ -262,6 +271,12 @@ class Screen extends LitComponent {
     }
     li.clickable:active {
       transform: scale(0.98);
+    }
+    li.audio {
+      width: 100%;
+    }
+    li.audio ios-chat-message {
+      width: 100%;
     }
 
     ios-chat-message {

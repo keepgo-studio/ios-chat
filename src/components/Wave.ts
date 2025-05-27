@@ -83,18 +83,18 @@ class Wave extends LitComponent {
       this._height = height;
 
       if (this.mode === "stopped") {
-        this._audioDotHeight = downsampleRMS(this._channelMonoData, width * 0.18);
+        this._audioDotHeight = downsampleRMS(this._channelMonoData, Math.floor(width * 0.2));
       }
     }, 500);
 
     this._resizeObserver = new ResizeObserver(debouncedCallback);
     this._resizeObserver.observe(this);
+    this._width = this.offsetWidth;
 
     this._viewObserver = new IntersectionObserver((entries) => {
       const shouldDraw = entries[0].isIntersecting;
-
+      cancelAnimationFrame(this._frameRef);
       if (shouldDraw) this.draw();
-      else cancelAnimationFrame(this._frameRef);
     });
     this._viewObserver.observe(this);
 
@@ -137,8 +137,17 @@ class Wave extends LitComponent {
               ? audioBuffer.getChannelData(1)
               : null;
 
-          this._channelMonoData = right ? left.map((v, i) => (v + right[i]) / 2) : left;
-          this._audioDotHeight = downsampleRMS(this._channelMonoData, this.offsetWidth * 0.18);
+          if (right && right.length > 0) {
+            const len = left.length;
+            const mono = new Float32Array(len);
+            for (let i = 0; i < len; i++) {
+              mono[i] = (left[i] + right[i]) * 0.5;
+            }
+            this._channelMonoData = mono;
+          } else {
+            this._channelMonoData = left;
+          }
+          this._audioDotHeight = downsampleRMS(this._channelMonoData, Math.floor(this._width * 0.2));
         })
         .catch(() => {
           this._audioDotHeight.length = 0;
@@ -341,19 +350,21 @@ async function urlToArrayBuffer(url: string) {
 
 function downsampleRMS(data: Float32Array, resolution = 128, scale = 2.5): number[] {
   const blockSize = Math.floor(data.length / resolution);
-  const result: number[] = [];
+  const result = new Array(resolution);
 
-  range(resolution).forEach((_, i) => {
+  for (let i = 0; i < resolution; i++) {
     let sumSq = 0;
+    const start = i * blockSize;
+    const end = start + blockSize;
 
-    range(blockSize).forEach((_, j) => {
-      const index = i * blockSize + j;
-      const sample = data[index];
+    for (let j = start; j < end; j++) {
+      const sample = data[j];
       sumSq += sample * sample;
-    });
+    }
+
     const rms = Math.sqrt(sumSq / blockSize);
-    result.push(clamp(rms * scale, 0, 1));
-  })
+    result[i] = clamp(rms * scale, 0, 1);
+  }
 
   return result;
 }
