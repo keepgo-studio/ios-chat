@@ -10,7 +10,7 @@ class MessageText extends LitComponent {
 
   protected override render() {
     return html`
-      <p @mousedown=${(e: Event) => e.stopPropagation()}>${this.val}</p>
+      <p>${this.val}</p>
     `;
   }
 

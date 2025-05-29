@@ -85,8 +85,7 @@ class InputAudio extends LitComponent {
         }
       },
       complete: () => {
-        const { audioData, recordData } =
-          this._playerActor.getSnapshot().context;
+        const { audioData, recordData, shouldSend } = this._playerActor.getSnapshot().context;
 
         // clean memory for audio mode
         if (audioData.src) {
@@ -94,11 +93,12 @@ class InputAudio extends LitComponent {
         }
         // clean memory for recorder mode
         if (this._recorder) {
+          URL.revokeObjectURL(recordData.src ?? "");
           this._recorder.stop();
         }
 
         // audio mode
-        if (this._data) {
+        if (shouldSend && this._data) {
           this.actorRef.send({
             type: "APPEND_AUDIO",
             audioContent: {
@@ -106,8 +106,10 @@ class InputAudio extends LitComponent {
               val: this._data,
             },
           });
-          // record mode
-        } else if (recordData.blob) {
+          this.actorRef.send({ type: "SEND_MESSAGE" });
+        } 
+        // record mode
+        else if (shouldSend && recordData.blob) {
           const { blob, duration } = recordData;
           this.actorRef.send({
             type: "APPEND_AUDIO",
@@ -116,8 +118,11 @@ class InputAudio extends LitComponent {
               val: { type: "raw", blob, duration },
             },
           });
+          this.actorRef.send({ type: "SEND_MESSAGE" });
         }
-        this.actorRef.send({ type: "SEND_MESSAGE" });
+
+        // close input player
+        this.actorRef.send({ type: "DETACH_AUDIO" });
       },
     });
 

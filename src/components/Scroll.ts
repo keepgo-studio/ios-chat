@@ -218,6 +218,9 @@ class Scroll extends LitComponent {
   mousemoveHandler(e: MouseEvent) {
     if (!this._mouseCoor.isDragging()) return;
 
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) return;
+
     const dest = this.dargDirection * e.movementY;
     this._mousemoveCachedY += dest;
     this.moveTo(this._mousemoveCachedY);

@@ -6,6 +6,7 @@ import ChatRoomModel, {
 import { AppError } from "@/config/error";
 import type LitComponent from "@/config/component";
 import type { ChatRoomId } from "@/lib/data-structure";
+import { v4 as uuidv4 } from "uuid";
 
 export type MessagePayload = Omit<ChatMessage, keyof ChatMessageMeta | "role">;
 
@@ -95,7 +96,7 @@ export default class ChatRoomController {
     const room = this._getRoom(roomId);
 
     const msg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       role: "sender",
       createdDatetime: Date.now(),
       ...payload
@@ -108,7 +109,7 @@ export default class ChatRoomController {
     const room = this._getRoom(roomId);
 
     const msg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       role: "answer",
       createdDatetime: Date.now(),
       ...payload

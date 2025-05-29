@@ -49,8 +49,9 @@ class MessageAudio extends LitComponent {
       this._loading = true;
 
       if (this.val.type === "raw") {
-        const { blob } = this.val;
+        const { blob, duration } = this.val;
         this._src = URL.createObjectURL(blob);
+        if (duration) this._durationSec = duration;
       } else if (this.val.type === "url") {
         this._src = this.val.src;
       }
@@ -91,7 +92,11 @@ class MessageAudio extends LitComponent {
     this.syncDurationStr();
   }
   canplaythroughHandler() {
-    this._durationSec = this.audioElem.duration;
+    const duration = this.audioElem.duration;
+
+    if (isFinite(duration)) {
+      this._durationSec = duration;
+    }
     this.syncDurationStr();
   }
   playEventHandler() {
@@ -253,12 +258,8 @@ class MessageAudio extends LitComponent {
       background-color: var(--chat-input-bg);
       font-size: 12px;
       padding: 4px 6px;
-      cursor: pointer;
       text-align: center;
       width: 5em;
-    }
-    .duration-viewer:active {
-      filter: brightness(0.8);
     }
 
     button {

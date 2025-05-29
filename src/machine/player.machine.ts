@@ -9,6 +9,7 @@ interface Context {
     duration: number;
     src: string | null;
   };
+  shouldSend: boolean;
 }
 
 type Events = 
@@ -35,10 +36,13 @@ export const playerMachine = setup({
     }),
     assignRecordData: assign({
       recordData: (_, params: { blob: Blob; duration: number; src: string }) => params
+    }),
+    sendToChat: assign({
+      shouldSend: () => true
     })
   }
 }).createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QAcA2BDAnmATgWgFt0BjACwEsA7MAYgFEAlBgeQYG0AGAXURQHtY5AC7k+lXiAAeiAIwBODgDoAzADYOcgCwB2bQCYOHbYe0AaEJkR4AHIo6qArDJnbNquTM0cHmvQF8-czQsXEISCmpFAEkIVFoAQQBVABEo5gB9AFlmZLpOHiQQZAFhUXFC6QQ8PWtVRU0HVRk9PW0PPR09B3NLBGUHO1VrLR1tJ08ZZQCgjGx8IjIqMGjY2gY6AGFWZKycvO4JYsERMQlK6usB7SGm-TG9OX7NHqsZOsvrN4cOGWtO-0CRVmoQWEWWDDA6AgmBoAGU6AA5HZJVLMfKHEoncqgc5qOSKBzWDh6ZTGMaaZR6VQvBANOqqEmjZRyBwdGqaaZAkLzcJLRQQqEwgAqjEyUQR8RF6MKR1KpwqiG0ikZxPsDgcj2UXmpFkQdMUDP6Mgc2mUnlZDk5wTmYUWkQF0MUAAV0ABXWCQGhOgAy8QAmtL+McymcrGo9CoxoZrGpNCyicoaVSlcyHMpmcYKVq5FbgTy7eDIY6Xe7PestgxkoGipiQwqqpNlHZrAZjeNjI4ab86nJtM0fDVDBxrJdc9zbWD+UXMM7ZlQoF6kvD0ii0tXZVjQ1UajJFJNCS4hx8k6oUyz072OFm42ObaC+Q6ZxDiHwcBB54vEsvy9t17X5TirxUgS8jfA8p6NHIUFJpothNI0wzDsSrJTIC1ogrykR0DgOCvjQIoMGKEpSgcMr-tiUiyE0iiXAoDIaES1iuDS+qGt8F6Dh0t4YQWNDrPCQp-sGAGUQgqjvPuHSUo8LbPLqVTKLYHTEnovw7qprIBIClB8BAcCHHmE5LBiwkUecDS2KS3zDrG8YcIm8l4P2iiuMSMgaG48jONx+aTjEcQmXKZlWHIEYdOo+juVBxJyb0eCKcqXgtGpnwaQCMzjve9rToFm71ngmjuZG1kxqocaEvZNJQfUfYkvZLYaGVlpoYZWWFoKzpuh6EC5XWgHbtRnyuK03hyGVDm9N2ii9v2vhEtG1g+UZ2UdU6c6UFAvUiecVK7qSUGtMyHQxrFiDpk2HnHQopJNItLWZZh7WOs+r7vhtW3BQgtgjoYLjuIOlwtF2tTTbVA7zcOd0ZXej2KEKuAEFQ6BCGAH1bk5Wj1P0hjhY1hWnbS6qRka2ipT8VKqEtbWKNhuE4Gj9YGPiqkyfVVJMfoXaGPUChyC2p4NAhOZaUAA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QAcA2BDAnmATgWgFt0BjACwEsA7MAYgFEAlBgeQYG0AGAXURQHtY5AC7k+lXiAAeiAIwBODgDoAzADYOcgCwB2bQCYOHbYe0AaEJkR4AHIo6qArDJnbNquTM0cHmvQF8-czQsXEISCmoaBjoAZToAFU4eJBBkAWFRcRTpBFVVRWsZZQc9TWU9OWVrUvNLBDwqxVKOPT0ZasK2koCgjGx8IjIqMEUASQhUWgBBAFUAEVHmAH0AWWY5uiSJNMERMQkcvD1rfM0HVRlW7Q9S-QdaxGK7VWstHW0nTyKe1L7QwYiI3GkyidAAwqw5qt1ptuNt0nssqBDscHIptC8LvoPhVipoHvUZPlrA5Co4OO0dK0fsF+mEhtRFAwwOgIJgaHEAHJQ2YLZhbFI7DL7bJWZQKAqXEoODjKHRuZQEsrKApydwfGVyDzKGQ0v4DcLDJkstk0eKMFajTlTc0C-i7TIHRDaJpylr2BwOSpu1RK86KVR6YoyBzaHVnPQOPUhA0MkbM1mYRQABXQAFdYJAaMmADJTACadtSCMdovqaj0Kg+hmsak0clJsoJelULvFDmU4uMyvr0bpAKNCbZKfTmYgoIhDDmRaFiKdhM7dmqFM9zmMjgJ7Xycm0Ut81kMHGsJL7-0NjKHSeTfSoUGzsziS15ixnJZFyKsxxkiiKpJch5Jaxm1bFQG07HcOB7ORT1jQFjUTY1iD4HAIFve8ZkfaJJ2nOFBTfJEpCsS58icBsWjVD53C1ZtNFsC5zleI8WhKZQYPpOC6BwHBkLNC0rRtWFkntYUCJyIlvxJBRAw0A9rFcP18kDYpZXFY4Wk0AJAhASg+AgOBtn1djhnhB130I+ozlsZRqyPOsGwPRULCIyN0S8VodTkjtPVYrTaTPOMxgmMATJE+c8DkStSnUfQZA0BQaic8tbGaVp2i-Lp-F8wyBwvE06mEucyzwTRYqrGVbNUetG0cuotUUHQpQqAwvR0aw2Jy+M8pHDNIBCwqP3qFsJJcXxjC9SqatkE5FB3Pc1JrNqspjIzcoQ68sFvPrSwGo4LirLU9DDCLaLlAlOxVDRfFohRrIuRbemWjr4OHZkkJQza8NM0TEFsY9DBcdw1JJVpN2m2bI33AD7t+R7zxGeJcAIKh0CEYLPtCor5E0erlPU9Q1RK-FErONFrODbROgpFtVHauHFE47icC2sycgMOQmnkKpZWqF5dD0TdDHqhQ5B51xPReaDNKAA */
   id: "player-machine",
 
   context: {
@@ -49,7 +53,8 @@ export const playerMachine = setup({
       blob: null,
       duration: 0,
       src: null
-    }
+    },
+    shouldSend: false
   },
 
   states: {
@@ -100,7 +105,10 @@ export const playerMachine = setup({
       initial: "Paused",
 
       on: {
-        SEND_AUDIO: "Terminate",
+        SEND_AUDIO: {
+          target: "Terminate",
+          actions: "sendToChat"
+        },
 
         TERMINATE: {
           target: "Terminate",

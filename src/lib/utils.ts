@@ -13,11 +13,11 @@ export function cancelableDelay() {
   let cancelFnRef: undefined | (() => void);
 
   function run(ms: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-      timeoutId = setTimeout(resolve, ms);
+    return new Promise((res, rej) => {
+      timeoutId = setTimeout(res, ms);
       cancelFnRef = () => {
         clearTimeout(timeoutId);
-        reject("cancel delay");
+        rej("cancel delay");
       };
     });
   }
