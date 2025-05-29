@@ -9,10 +9,13 @@
     "@types"
   ],
   "scripts": {
-    "build:watch-build": "node esbuild.mjs --watch",
-    "build:watch-types": "tsc --watch",
-    "build:types": "tsc",
-    "build": "tsc && node esbuild.mjs"
+    "lint": "eslint .",
+    "ts": "tsc --noEmit",
+    "ts:watch": "tsc --watch --noEmit",
+    "build": "node esbuild.mjs",
+    "build:ts": "tsc --emitDeclarationOnly",
+    "build:watch": "node esbuild.mjs --watch",
+    "deploy": "npm run lint && npm run ts && node esbuild.mjs"
   },
   "keywords": [
     "lit",
@@ -28,14 +31,19 @@
   "author": "One Commit",
   "license": "MIT",
   "devDependencies": {
+    "@eslint/js": "^9.26.0",
     "esbuild": "0.21.5",
+    "eslint": "^9.26.0",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "globals": "^16.1.0",
     "ts-lit-plugin": "^2.0.2",
-    "typescript": "^5.5.2"
+    "typescript": "^5.5.2",
+    "typescript-eslint": "^8.32.1"
   },
   "dependencies": {
-    "@types/uuid": "^10.0.0",
     "lit": "^3.1.4",
-    "uuid": "^10.0.0"
+    "uuid": "^11.1.0",
+    "xstate": "^5.19.2"
   },
   "bugs": {
     "url": "https://github.com/keepgo-studio/ios-chat/issues"

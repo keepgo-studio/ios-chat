@@ -3,9 +3,10 @@
     "rootDir": "src",
     "outDir": "dist",
 
-    "target": "ES6", 
+    "target": "ES2018", 
     "module": "ES6",
 
+    "verbatimModuleSyntax": true,
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
@@ -15,17 +16,20 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,      
     "removeComments": true,
-    "emitDeclarationOnly": true,
-    "experimentalDecorators": true,
     "noImplicitAny": true,
     "noImplicitThis": true,
     "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
 
     "baseUrl": ".",
     "moduleResolution": "node",
     "typeRoots": [
       "node_modules/@types",
-      "@types"
+      "src/@types"
     ],
     "paths": {
       "@/*": ["src/*"]
@@ -36,12 +40,12 @@
         "strict": true,
         "rules": {
           "no-unknown-tag-name": "warning",
-          "no-unknown-event": "off",
+          "no-unknown-event": "warning",
           "no-missing-import": "off"
         }
       }
     ]
   },
-  "include": ["src", "@types"],
+  "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }

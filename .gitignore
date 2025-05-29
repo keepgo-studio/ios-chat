@@ -4,3 +4,5 @@ build/
 test/
 .DS_Store
 package-lock.json
+
+TODOS.md

@@ -1,392 +1,328 @@
-import { globalStyles } from "@/lib/core";
-import { cancelMoving, delay, linkify, minMax, moveTo, pxToNumber } from "@/lib/utils";
-import { LitElement, PropertyValueMap, css, html } from "lit";
-import { customElement, property, query } from "lit/decorators.js";
+import type { ChatMachineActorRef } from "@/machine/app.machine";
+import LitComponent from "@/config/component";
+import { delay, pxToNumber } from "@/lib/utils";
+import type { ChatMessage } from "@/models/chat-room";
+import { css, html, type PropertyValues } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
-import type { ChatMessage } from "@/lib/handler";
-import type{ ChatMessageType } from "@/lib/service";
+import { styleMap } from "lit/directives/style-map.js";
+import type { Padding } from "@/lib/style-utils";
+import { classMap } from "lit/directives/class-map.js";
 
-export const DURATION = 300;
+const MESSAGE_WIDTH_RATIO = 0.75;
+
 @customElement("ios-chat-screen")
-class Screen extends LitElement {
-  static override styles = [
-    globalStyles,
-    css`
-      ul {
-        font-size: var(--font-size);
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        padding: 10px 12px calc(2.4em + 20px) 16px;
-      }
-      ios-chat-scrollbar {
-        position: absolute;
-        top: 10px;
-        right: 6px;
-        height: calc(100% - 2.4em - 40px);
-      }
+class Screen extends LitComponent {
+  @property({ attribute: false })
+  actorRef!: ChatMachineActorRef;
 
-      li {
-        display: block;
-      }
-      a {
-        text-decoration: none;
-        font-weight: bold;
-        color: #626262;
-      }
-      .message.answer a {
-        color: #adadad;
-      }
-      a:hover {
-        text-decoration: underline;
-      }
-      a:active {
-        filter: brightness(0.9);
-      }
-      .message {
-        border-radius: var(--border-radius);
-        position: relative;
-        color: #fff;
-        width: fit-content;
-        word-break: break-all;
-        align-self: flex-end;
-        background: var(--blue);
-        max-width: 70%;
-      }
-      .message.error {
-        background-color: var(--red) !important;
-        cursor: not-allowed;
-      }
-      p {
-        padding: 0.6em 1em;
-        line-height: 1.2em;
-        width: fit-content;
-        white-space: pre-line;
-        user-select: text;
-      }
-      .message:has(ios-chat-audio-message) {
-        width: 100%;
-      }
-      .message:has(ios-chat-img) {
-        max-width: 65%;
-        transition: ease ${DURATION}ms;
-      }
-      .message:has(ios-chat-img):active {
-        transform: scale(0.95);
-      }
-      .message:has(ios-chat-spinner) {
-        background-color: var(--disable) !important;
-      }
-      ios-chat-spinner {
-        display: block;
-        width: 50px;
-        height: 40px;
-        padding: 0.2em 1em;
-      }
+  @property({ attribute: false })
+  padding?: Padding;
 
-      .message > *:not(.tail) {
-        z-index: 1;
-        position: relative;
-      }
-      .message.with-tail {
-        margin-bottom: 6px;
-      }
-      .message.with-tail .tail {
-        display: block;
-        background: inherit;
-      }
-      .message .tail {
-        display: none;
-      }
-      .message.with-tail .tail:before {
-        content: "";
-        position: absolute;
-        z-index: 0;
-        bottom: 0;
-        right: -9px;
-        height: 20px;
-        width: 20px;
-        background: inherit;
-        background-attachment: fixed;
-        border-bottom-left-radius: 15px;
-      }
-      .message.with-tail .tail:after {
-        content: "";
-        position: absolute;
-        z-index: 1;
-        bottom: 0;
-        right: -10px;
-        width: 10px;
-        height: 20px;
-        background: var(--theme-bg);
-        border-bottom-left-radius: 10px;
-      }
+  @state()
+  _messages: ChatMessage[] = [];
 
-      .message.answer {
-        background: var(--message-color);
-        align-self: flex-start;
-        color: var(--theme-color);
-      }
-      .message.answer .tail::before {
-        background: inherit;
-        left: -9px;
-        border-radius: 0;
-        border-bottom-right-radius: 15px;
-      }
-      .message.answer .tail::after {
-        background: var(--theme-bg);
-        left: -10px;
-        border-radius: 0;
-        border-bottom-right-radius: 10px;
-      }
-    `,
-  ];
+  @state()
+  _inputHeight = 0;
 
-  private _inputWidth = 0;
+  @state()
+  _senderLastIdx = -1;
 
-  @property({ type: Array })
-  data: ChatMessage[] = [];
+  @state()
+  _answerLastIdx = -1;
 
-  @query("ul")
-  ul!: HTMLElement;
+  @state()
+  _animate = false;
+
+  @state()
+  _isTyping = false;
+
+  @state()
+  _isBottom = false;
 
   @query("ios-chat-scroll")
-  scrollContainer!: HTMLElement;
+  scrollElem!: LitComponent;
 
-  @query("ios-chat-scrollbar")
-  scrollbar!: HTMLElement;
+  @query("ul")
+  ulElem!: HTMLUListElement;
 
-  override connectedCallback() {
-    super.connectedCallback();
+  @query("ul li:last-child")
+  lastMessageElem?: HTMLLIElement;
 
-    this.addEventListener("input-fired", (e) => {
-      this._inputWidth = e.detail.width;
-    });
+  @query("ios-chat-scroll > div")
+  bottomElem!: HTMLElement;
 
-    this.addEventListener("input-active", (e) => {
-      this.ul.style.paddingBottom = `${e.detail.height}px`;
-      this.scrollToBottom();
-    });
+  private _io?: IntersectionObserver;
 
-    this.addEventListener("pop", () => {
-      this.renderPop();
-    });
-  }
-
-  renderContent(type: ChatMessageType, content: string) {
-    switch (type) {
-      case "text":
-        return html`<p>${linkify(content)}</p>`;
-      case "audio":
-        return html`<ios-chat-audio-message .src=${content}></ios-chat-audio-message>`;
-      case "img":
-        return html`<ios-chat-img .imgSrc=${content}></ios-chat-img>`;
-      case "loading":
-        return html`<ios-chat-spinner></ios-chat-spinner>`;
-    }
-  }
-
-  scrollToBottom(mode: "instant" | "smooth" = "smooth") {
-    cancelMoving(this.scrollContainer);
-
-    this.scrollContainer.scrollTo({
-      top: this.scrollContainer.scrollHeight,
-      behavior: mode,
-    });
-  }
-
-  async renderPop() {
-    const recent = this.data.pop();
-
-    if (!recent) return;
-
-    const recentElem = this.shadowRoot!.getElementById(recent.id)!;
-
-    recentElem.style.transition = `ease ${DURATION}ms`;
-    recentElem.style.transform = `translate(-50%, -50%) scale(0)`;
-    recentElem.style.opacity = "0";
-
-    const scrollTop = this.scrollContainer.scrollTop;
-
-    await moveTo(this.scrollContainer, {
-      from: scrollTop,
-      dest: scrollTop - recentElem.offsetHeight,
-      duration: DURATION,
-    });
-
-    await delay(1);
-
-    recentElem.remove();
-
-    this.renderList();
-  }
-
-  async renderRecent() {
-    const recent = this.data[this.data.length - 1];
-    const recentElem = this.shadowRoot!.getElementById(recent.id)!;
-
-    const cs = window.getComputedStyle(this.ul);
-    const pb = pxToNumber(cs.paddingBottom);
-    const recentCr = recentElem.getBoundingClientRect();
-    const rootCr = this.getBoundingClientRect();
-    const gap = rootCr.height - (recentCr.y - rootCr.y);
-
-    // chat-input padding top = 10px
-    const top = 10 + minMax(gap, 0) - pb;
-
-    // init style
-    recentElem.style.background = "var(--textarea)";
-    recentElem.style.zIndex = recent.role === "sender" ? "10" : "";
-    recentElem.style.top = top + "px";
-
-    if (recent.type === "text") {
-      recentElem.style.maxWidth = "none";
-
-      if (recent.role === "sender") {
-        recentElem.style.width = `${this._inputWidth}px`;
+  override connected(): void {
+    this.actorRef.subscribe((snap) => {
+      if (snap.matches({ Render: { Screen: { Ready: "Animating" } }})) {
+        this._animate = true;
+        this._messages = snap.context.messages;
       }
-    } else if (recent.type === "audio") {
-      recentElem.style.maxWidth = "none";
 
-      if (recent.role === "sender") {
-        recentElem.style.width = `${this._inputWidth}px`;
+      if (snap.matches({ Render: { Screen: { Ready: "Painting" } }})) {
+        this._animate = false;
+        this._messages = snap.context.messages;
       }
-    }
 
-    await delay(1);
+      // Update input height after 'ios-chat-input' tag's resizing is complete
+      if (snap.matches({ Render: { InputCoor: "Stop" }})) {
+        this._inputHeight = snap.context.inputCoor.height;
+      }
 
-    recentElem.style.transition = `ease ${DURATION}ms, background ease 500ms`;
-    recentElem.style.background =
-      recent.role === "sender" ? "var(--blue)" : "var(--message-color)";
-
-    const containerHeight = this.scrollContainer.offsetHeight;
-    const containerScrollHeight = this.scrollContainer.scrollHeight;
-    const scrollTop = this.scrollContainer.scrollTop;
-    const ulWidth =
-      pxToNumber(cs.width) -
-      pxToNumber(cs.paddingLeft) -
-      pxToNumber(cs.paddingRight);
-    let scrollDest = containerScrollHeight - containerHeight;
-
-    const contentElem = recentElem!.querySelector(
-      "p, ios-chat-img, ios-chat-spinner, ios-chat-audio-message"
-    ) as HTMLElement;
-    const contentWidth = contentElem.offsetWidth;
-
-    if (contentWidth + 1 > ulWidth * 0.7 || recent.type === "audio") {
-      recentElem.style.width = `${ulWidth * 0.7}px`;
-      scrollDest += recentElem.offsetHeight * 0.3;
-    } else if (recent.type === "text") {
-      recentElem.style.width = `${contentWidth + 1}px`;
-    }
-
-    recentElem.style.top = 0 + "px";
-    moveTo(this.scrollContainer, {
-      from: scrollTop,
-      dest: scrollDest,
-      duration: DURATION,
+      if (snap.matches({ Render: { Input: { Ready: { TypeMode: "Typing" }}}})) {
+        this._isTyping = true;
+      } else if (snap.matches({ Render: { Input: { Ready: { TypeMode: "Idle" }}}})) {
+        this._isTyping = false;
+      }
     });
-
-    await delay(300);
-    
-    recentElem.style.maxWidth = "";
-    recentElem.style.width = "";
-    recentElem.style.zIndex = "0";
   }
 
-  renderList() {
-    const n = this.data.length;
+  protected override willUpdate(_changedProperties: PropertyValues): void {
+    if (_changedProperties.has("_messages")) {
+      this._senderLastIdx = -1;
+      this._answerLastIdx = -1;
 
-    for (let idx = 0; idx < n; idx++) {
-      const elem = this.shadowRoot?.getElementById(this.data[idx].id);
+      const n = this._messages.length;
 
-      elem!.style.zIndex = "0";
-      elem!.classList.remove("with-tail");
+      for (let idx = n - 1; idx >= 0; idx--) {
+        const message = this._messages[idx];
 
-      if (idx === n - 1 || this.data[idx].role !== this.data[idx + 1].role) {
-        elem?.classList.add("with-tail");
+        if (this._senderLastIdx === -1 && message.role === "sender") {
+          this._senderLastIdx = idx;
+        }
+
+        if (this._answerLastIdx === -1 && message.role === "answer") {
+          this._answerLastIdx = idx;
+        }
+
+        if (this._senderLastIdx !== -1 && this._answerLastIdx !== -1) {
+          break;
+        }
       }
     }
   }
 
-  protected override updated(
-    _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    this.renderList();
+  protected override firstUpdated(): void {
+    this._io = new IntersectionObserver((entries) => {
+      this._isBottom = entries[0].isIntersecting;
+    }, {
+      threshold: 1
+    });
 
-    if (_changedProperties.has("data") && this._inputWidth) {
+    this._io?.observe(this.bottomElem);
+  }
+
+  protected override updated(_changedProperties: PropertyValues): void {
+    if (
+      _changedProperties.has("_messages") && 
+      this._messages.length > 0 &&
+      this._animate
+    ) {
       this.renderRecent();
     }
   }
 
-  scrollingHandler(e: ScrollingEvent) {
-    const { y, maxHeight } = e.detail;
+  async renderRecent() {
+    if (!this.lastMessageElem) return;
 
-    this.scrollbar.setAttribute(
-      "viewportLength",
-      this.scrollContainer.offsetHeight.toString()
-    );
-    this.scrollbar.setAttribute("totalLength", maxHeight.toString());
-    this.scrollbar.setAttribute("current", y.toString());
-  }
+    const { textareaCoor, inputCoor } = this.actorRef.getSnapshot().context;
+    const recentMessage = this._messages[this._messages.length - 1];
+    const li = this.lastMessageElem;
+    const isSender = recentMessage.role === "sender";
+    const isImgContain = recentMessage.contents.some(c => c.type === "img");
+    const isAudioContain = recentMessage.contents.some(c => c.type === "audio");
+    const messageElem = li.querySelector("ios-chat-message")!;
+    const ulCStyle = window.getComputedStyle(this.ulElem);
+    // style variables
+    const duration = 500;
+    const actualScreenHeight = this.offsetHeight - inputCoor.height;
+    const gapBetweenInputTopFromLi = actualScreenHeight - li.offsetTop;
+    const inputPaddingY = inputCoor.height - textareaCoor.height;
+    const messageMaxWidth = pxToNumber(ulCStyle.width) - pxToNumber(ulCStyle.paddingLeft) - pxToNumber(ulCStyle.paddingRight);
 
-  clickHandler(e: Event) {
-    const target = (e.currentTarget as HTMLElement);
-    const img = target.querySelector("ios-chat-img");
+    const y = Math.max(gapBetweenInputTopFromLi, 0) + inputPaddingY / 2;
 
-    if (
-      img &&
-      img.getAttribute("success") !== null &&
-      this.ul.offsetHeight > this.scrollContainer.offsetHeight
-    ) {
-      cancelMoving(this.scrollContainer);
+    // before painting recent ios-chat-message
+    const beforeAnimate = () => {
+      li.style.maxWidth = !isImgContain ? "none" : "";
 
-      this.scrollContainer.scrollTo({
-        left: 0,
-        top: target.offsetTop,
-        behavior: "smooth"
-      });
-
-      e.stopPropagation();
+      li.style.zIndex = isSender ? "99" : "";
+      li.style.color = "var(--theme-color)";
+      li.style.background = "var(--textarea)";
+      if (isImgContain) {
+        li.style.width = "";
+      } else if (isAudioContain) {
+        li.style.width = isSender ? `${messageMaxWidth}px` : "";
+      } else {
+        li.style.width = isSender ? `${textareaCoor.width}px` : "";
+      }
+      li.style.transform = `translateY(${y}px)`;
     }
+
+    // ⭐️ after painting recent ios-chat-message
+    // animate li and scroll to bottom
+    const animate = () => {
+      // style variables
+      const maxMessageWidth = messageMaxWidth * MESSAGE_WIDTH_RATIO;
+      const actualMessageWidth = messageElem.offsetWidth + 1; // +1px for prevent breaking line
+      const messageWidth = Math.min(actualMessageWidth, maxMessageWidth);
+
+      li.style.transition = `var(--ease-out-quart) ${duration}ms`;
+
+      li.style.color = isSender ? "#fff" : "";
+      li.style.background = isSender ? "var(--blue)" : "var(--message-color)";
+      li.style.width = (isSender && !isImgContain) ? `${messageWidth}px` : "";
+      li.style.transform = `translateY(0px)`;
+    }
+
+    // after animation
+    const afterAnimate = () => {
+      li.style.maxWidth = "";
+
+      li.style.transition = "";
+
+      li.style.zIndex = "";
+      li.style.color = "";
+      li.style.background = "";
+      li.style.width = "";
+      li.style.transform = "";
+    }
+
+    beforeAnimate();
+    await delay(1);
+    animate();
+    await delay(duration);
+    afterAnimate();
   }
 
   protected override render() {
-    return html`
-      <ios-chat-scroll .startAt=${"bottom"} @scrolling=${this.scrollingHandler}>
-        <ul>
-          ${repeat(
-            this.data,
-            (msg) => msg.id,
-            (msg) => html`
-              <li
-                id=${msg.id}
-                class="message ${msg.role === "receiver" ? "answer" : ""}"
-                @click=${this.clickHandler}
-                @loaded=${async (e: CustomEvent) => {
-                  await delay(200);
-                  this.scrollToBottom();
+    const isLast = (idx: number) => {
+      return this._senderLastIdx === idx || this._answerLastIdx === idx;
+    };
 
-                  const li = this.shadowRoot?.getElementById(msg.id);
-                  
-                  if (e.detail) {
-                    li?.classList.remove("error");
-                  } else {
-                    li?.classList.add("error");
-                  }
-                }}
-              >
-                ${this.renderContent(msg.type, msg.content)}
-                <div class="tail"></div>
+    return html`
+      <ios-chat-scroll
+        .blockAutoScroll=${this._isTyping && !this._isBottom}
+        .scrollBehavior=${this._animate ? "smooth" : "auto"}
+        .padding=${this.padding && {
+          top: this.padding.top,
+          right: this.padding.right,
+          bottom: `calc(${this.padding.bottom} + ${this._inputHeight}px)`,
+          left: this.padding.left,
+        }}
+      >
+        <ul
+          style=${styleMap({ opacity: this._messages.length > 0 ? "1" : "0" })}
+        >
+          ${repeat(
+            this._messages,
+            (message) => message.id,
+            (message, idx) => html`
+              <li class=${classMap({
+                [message.role]: true,
+                "clickable": message.contents.some(msg => msg.type === "img"),
+                "audio": message.contents.some(msg => msg.type === "audio")
+              })}>
+                <ios-chat-message .message=${message}></ios-chat-message>
+                ${isLast(idx)
+                  ? html`<div class="tail ${message.role === "sender" ? "right" : "left"}"></div>`
+                  : undefined}
               </li>
             `
           )}
         </ul>
+        <div style=${styleMap({ transform: `translateY(${-this._inputHeight}px)`})}></div>
       </ios-chat-scroll>
-
-      <ios-chat-scrollbar></ios-chat-scrollbar>
     `;
   }
+
+  protected static override shadowStyles = css`
+    ul {
+      font-size: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: .125em;
+      height: 100%;
+      width: 100%;
+      transition: var(--ease-out-quart) 500ms opacity;
+    }
+
+    li {
+      position: relative;
+      width: fit-content;
+      max-width: ${MESSAGE_WIDTH_RATIO * 100}%;
+      box-shadow: 0 0 8px 0 var(--message-color);
+      border-radius: var(--border-radius);
+    }
+    li.sender {
+      align-self: flex-end;
+      background: var(--blue);
+      color: #fff;
+    }
+    li.answer {
+      align-self: flex-start;
+      background: var(--message-color);
+      color: var(--theme-color);
+    }
+    li.clickable {
+      transition: ease 500ms;
+    }
+    li.clickable:active {
+      transform: scale(0.98);
+    }
+    li.audio {
+      width: 100%;
+    }
+    li.audio ios-chat-message {
+      width: 100%;
+    }
+
+    ios-chat-message {
+      position: relative;
+      z-index: 2;
+    }
+  
+    .tail {
+      background: inherit;
+    }
+    .tail:before {
+      content: "";
+      position: absolute;
+      z-index: 0;
+      bottom: 0;
+      height: 1.25em;
+      width: 1.25em;
+      background: inherit;
+      background-attachment: fixed;
+    }
+    .tail:after {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      bottom: 0;
+      width: 0.625em;
+      height: 1.25em;
+      background: var(--theme-bg);
+    }
+    .tail.right:before {
+      right: -0.5625em;
+      border-bottom-left-radius: 0.9375em;
+    }
+    .tail.right:after {
+      right: -0.625em;
+      border-bottom-left-radius: 0.625em;
+    }
+    .tail.left:before {
+      left: -0.5625em;
+      border-bottom-right-radius: 0.9375em;
+    }
+    .tail.left:after {
+      left: -0.625em;
+      border-bottom-right-radius: 0.625em;
+    }
+  `;
 }
 
 declare global {
