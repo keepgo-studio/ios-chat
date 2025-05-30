@@ -3,7 +3,9 @@ import type { ChatMachineActorRef } from "@/machine/app.machine";
 import { css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
-@customElement("ios-chat-input")
+const TAG_NAME = "ios-chat-input";
+
+@customElement(TAG_NAME)
 class Input extends LitComponent {
   @property({ attribute: false })
   actorRef!: ChatMachineActorRef;
@@ -131,6 +133,6 @@ class Input extends LitComponent {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ios-chat-input": Input;
+    [TAG_NAME]: Input;
   }
 }

@@ -11,7 +11,9 @@ import { classMap } from "lit/directives/class-map.js";
 
 const MESSAGE_WIDTH_RATIO = 0.75;
 
-@customElement("ios-chat-screen")
+const TAG_NAME = "ios-chat-screen";
+
+@customElement(TAG_NAME)
 class Screen extends LitComponent {
   @property({ attribute: false })
   actorRef!: ChatMachineActorRef;
@@ -327,6 +329,6 @@ class Screen extends LitComponent {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ios-chat-screen": Screen;
+    [TAG_NAME]: Screen;
   }
 }

@@ -2,7 +2,9 @@ import LitComponent from "@/config/component";
 import { html } from "lit";
 import { customElement } from "lit/decorators.js";
 
-@customElement("ios-chat-message-loading")
+const TAG_NAME = "ios-chat-message-loading";
+
+@customElement(TAG_NAME)
 class MessageLoading extends LitComponent {
   protected override render() {
     return html`
@@ -13,6 +15,6 @@ class MessageLoading extends LitComponent {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ios-chat-message-loading": MessageLoading;
+    [TAG_NAME]: MessageLoading;
   }
 }

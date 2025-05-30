@@ -13,10 +13,12 @@ import { styleMap } from "lit/directives/style-map.js";
 
 export type AppAttributeKey = "room-id" | "padding" | "mode" | "font-size";
 
+const TAG_NAME = "ios-chat";
+
 /**
  * 모든 ChatRoomController 코드는 machone(chat.machine.ts)에 넣었음
  */
-@customElement("ios-chat")
+@customElement(TAG_NAME)
 class App extends LitComponent {
   @state()
   _errorMsg: string | null = null;
@@ -154,6 +156,6 @@ class App extends LitComponent {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ios-chat": App;
+    [TAG_NAME]: App;
   }
 }

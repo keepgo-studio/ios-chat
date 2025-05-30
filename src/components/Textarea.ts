@@ -8,7 +8,9 @@ import { styleMap } from "lit/directives/style-map.js";
 
 import arrowSvg from "@/assets/arrow.up.circle.fill.svg";
 
-@customElement("ios-chat-textarea")
+const TAG_NAME = "ios-chat-textarea";
+
+@customElement(TAG_NAME)
 class Textarea extends LitComponent {
   @property({ attribute: false })
   actorRef!: ChatMachineActorRef;
@@ -291,6 +293,6 @@ class Textarea extends LitComponent {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ios-chat-textarea": Textarea;
+    [TAG_NAME]: Textarea;
   }
 }

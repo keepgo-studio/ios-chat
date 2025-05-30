@@ -1,8 +1,9 @@
 import LitComponent from "@/config/component";
-import { html, type PropertyValues } from "lit";
+import { css, html, type PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
-@customElement("ios-chat-error")
+const TAG_NAME = "ios-chat-error";
+@customElement(TAG_NAME)
 class AppError extends LitComponent {
   @property()
   msg: string | null = null;
@@ -17,13 +18,31 @@ class AppError extends LitComponent {
     if (!this.msg) return;
 
     return html`
-      <div>${this.msg}</div>
+      <div>
+        <p>Error</p>
+        <span>${this.msg}</span>
+      </div>
     `;
   }
+
+  protected static override shadowStyles = css`
+    div {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #ff5f57;
+    }
+    p {
+      font-size: 1.5em;
+    }
+  `;
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ios-chat-error": AppError;
+    [TAG_NAME]: AppError;
   }
 }

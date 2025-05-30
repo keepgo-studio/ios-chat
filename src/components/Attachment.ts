@@ -32,7 +32,9 @@ const items: Item[] = [
   },
 ];
 
-@customElement("ios-chat-attachment")
+const TAG_NAME = "ios-chat-attachment";
+
+@customElement(TAG_NAME)
 class Attachment extends LitComponent {
   @property({ attribute: false })
   actorRef!: ChatMachineActorRef;
@@ -236,6 +238,6 @@ class Attachment extends LitComponent {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ios-chat-attachment": Attachment;
+    [TAG_NAME]: Attachment;
   }
 }

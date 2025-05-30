@@ -5,7 +5,9 @@ import {styleMap} from 'lit/directives/style-map.js';
 
 import plusSvg from "@/assets/plus.svg";
 
-@customElement("ios-chat-toggle")
+const TAG_NAME = "ios-chat-toggle";
+
+@customElement(TAG_NAME)
 class Toggle extends LitComponent {
   @property({ type: Number })
   appWidth = 0;
@@ -91,6 +93,6 @@ class Toggle extends LitComponent {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ios-chat-toggle": Toggle;
+    [TAG_NAME]: Toggle;
   }
 }

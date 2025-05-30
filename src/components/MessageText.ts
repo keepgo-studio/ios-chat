@@ -3,7 +3,9 @@ import type { ChatMessageContentMap } from "@/models/chat-room";
 import { css, CSSResult, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
-@customElement("ios-chat-message-text")
+const TAG_NAME = "ios-chat-message-text";
+
+@customElement(TAG_NAME)
 class MessageText extends LitComponent {
   @property({ attribute: false })
   val!: ChatMessageContentMap["text"]["val"];
@@ -28,6 +30,6 @@ class MessageText extends LitComponent {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ios-chat-message-text": MessageText;
+    [TAG_NAME]: MessageText;
   }
 }

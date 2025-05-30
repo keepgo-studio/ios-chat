@@ -14,19 +14,15 @@ import { styleMap } from "lit/directives/style-map.js";
 
 type ScrollPosition = "top" | "bottom";
 
+const TAG_NAME = "ios-chat-scroll";
+
 /**
  * @fires scrolling
  */
-@customElement("ios-chat-scroll")
+@customElement(TAG_NAME)
 class Scroll extends LitComponent {
   @property({ type: Object })
   padding?: Padding;
-
-  @property({ type: Number })
-  wheelDirection = 1;
-
-  @property({ type: Number })
-  dargDirection = -1;
 
   @property({ type: Boolean })
   blockAutoScroll = false;
@@ -43,6 +39,8 @@ class Scroll extends LitComponent {
   @query("slot")
   slotElem!: HTMLSlotElement;
 
+  private _wheelDirection = 1;
+  private _dargDirection = -1;
   private _rootHeight = 0;
   private _wrapperHeight = 0;
   private _resizeObserver?: ResizeObserver;
@@ -195,13 +193,12 @@ class Scroll extends LitComponent {
     this.moveTo(dest, { from: this._currentY, type: "ease" });
   }, 10);
 
-  @eventOptions({ passive: true })
   wheelHandler(e: WheelEvent) {
     this.cancelMoving();
     const deltaY = e.deltaY;
     
     if (Math.abs(deltaY) > 200) {
-      const actualDest = this._currentY + this.wheelDirection * e.deltaY * 5;
+      const actualDest = this._currentY + this._wheelDirection * e.deltaY * 5;
       const dest = clamp(actualDest, this._minY, this._maxY);
 
       this.wheelMove(dest);
@@ -221,7 +218,7 @@ class Scroll extends LitComponent {
     const selection = window.getSelection();
     if (selection && selection.toString().length > 0) return;
 
-    const dest = this.dargDirection * e.movementY;
+    const dest = this._dargDirection * e.movementY;
     this._mousemoveCachedY += dest;
     this.moveTo(this._mousemoveCachedY);
   }
@@ -247,7 +244,7 @@ class Scroll extends LitComponent {
         ? this._rootHeight
         : 0;
 
-    const actualDest = this._mousemoveCachedY + this.dargDirection * step * downScaleV;
+    const actualDest = this._mousemoveCachedY + this._dargDirection * step * downScaleV;
     const dest = clamp(actualDest, this._minY, this._maxY);
 
     this.moveTo(dest, {
@@ -340,6 +337,6 @@ class Scroll extends LitComponent {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ios-chat-scroll": Scroll;
+    [TAG_NAME]: Scroll;
   }
 }
