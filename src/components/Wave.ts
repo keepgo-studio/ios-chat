@@ -218,7 +218,7 @@ class Wave extends LitComponent {
 
           ctx.fillStyle = "rgba(255, 69, 58, 0.8)";
 
-          range(this._recordDotCnt).forEach((_, idx) => {
+          for (let idx = 0 ; idx < this._recordDotCnt ; idx++) {
             const x = dotContainer * idx - this._xPosition;
             const { currentHeight, heightTo } = this._recordDotCoor[idx];
             const deltaH = heightTo - currentHeight;
@@ -237,7 +237,7 @@ class Wave extends LitComponent {
             if (this._lastDotIdx === null && (width - dotWidth) <= x) {
               this._lastDotIdx = idx;
             }
-          });
+          }
 
           this._xPosition += STEP;
 
@@ -245,15 +245,15 @@ class Wave extends LitComponent {
           if (this._xPosition >= width) {
             this._xPosition -= width;
 
-            range(halfDotCnt).forEach((_, idx) => {
+            for (let idx = 0 ; idx < halfDotCnt ; idx++) {
               const cloneRef = this._recordDotCoor[idx];
               const originRef = this._recordDotCoor[idx + halfDotCnt];
-
+  
               cloneRef.heightTo = originRef.heightTo;
               cloneRef.currentHeight = originRef.currentHeight;
               originRef.heightTo = 0;
               originRef.currentHeight = 0;
-            });
+            }
           }
           return;
         }
@@ -266,7 +266,7 @@ class Wave extends LitComponent {
           const dotWidth = (dotContainer / 3) * 2;
           // const dotSpace = dotContainer / 3;
 
-          range(n).forEach((_, idx) => {
+          for (let idx = 0 ; idx < n ; idx++) {
             const x = dotContainer * idx;
             const h = this._audioDotHeight[idx] * scaleHeight;
             const boundedH = Math.max(h, minDotH);
@@ -295,7 +295,9 @@ class Wave extends LitComponent {
           
               ctx.restore();
             }
-          });
+
+            ctx.closePath();
+          }
           return;
         }
       }

@@ -260,6 +260,7 @@ class MessageAudio extends LitComponent {
       padding: 4px 6px;
       text-align: center;
       width: 5em;
+      user-select: none;
     }
 
     button {
