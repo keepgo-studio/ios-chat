@@ -6,6 +6,7 @@ import "./components/Input";
 import "./components/InputPlayer";
 import "./components/Message"
 import "./components/MessageAudio"
+import "./components/DateDivider"
 import "./components/MessageImg"
 import "./components/MessageLoading"
 import "./components/MessageText"

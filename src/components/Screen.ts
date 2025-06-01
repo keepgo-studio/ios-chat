@@ -1,6 +1,6 @@
 import type { ChatMachineActorRef } from "@/machine/app.machine";
 import LitComponent from "@/config/component";
-import { delay, pxToNumber } from "@/lib/utils";
+import { delay, pxToNumber, range } from "@/lib/utils";
 import type { ChatMessage } from "@/models/chat-room";
 import { css, html, type PropertyValues } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
@@ -10,6 +10,7 @@ import type { Padding } from "@/lib/style-utils";
 import { classMap } from "lit/directives/class-map.js";
 
 const MESSAGE_WIDTH_RATIO = 0.75;
+const ONE_MINUTE = 60 * 1000;
 
 const TAG_NAME = "ios-chat-screen";
 
@@ -26,12 +27,6 @@ class Screen extends LitComponent {
 
   @state()
   _inputHeight = 0;
-
-  @state()
-  _senderLastIdx = -1;
-
-  @state()
-  _answerLastIdx = -1;
 
   @state()
   _animate = false;
@@ -55,6 +50,7 @@ class Screen extends LitComponent {
   bottomElem!: HTMLElement;
 
   private _io?: IntersectionObserver;
+  private _shouldShowTail: boolean[] = [];
 
   override connected(): void {
     this.actorRef.subscribe((snap) => {
@@ -81,31 +77,6 @@ class Screen extends LitComponent {
     });
   }
 
-  protected override willUpdate(_changedProperties: PropertyValues): void {
-    if (_changedProperties.has("_messages")) {
-      this._senderLastIdx = -1;
-      this._answerLastIdx = -1;
-
-      const n = this._messages.length;
-
-      for (let idx = n - 1; idx >= 0; idx--) {
-        const message = this._messages[idx];
-
-        if (this._senderLastIdx === -1 && message.role === "sender") {
-          this._senderLastIdx = idx;
-        }
-
-        if (this._answerLastIdx === -1 && message.role === "answer") {
-          this._answerLastIdx = idx;
-        }
-
-        if (this._senderLastIdx !== -1 && this._answerLastIdx !== -1) {
-          break;
-        }
-      }
-    }
-  }
-
   protected override firstUpdated(): void {
     this._io = new IntersectionObserver((entries) => {
       this._isBottom = entries[0].isIntersecting;
@@ -123,6 +94,34 @@ class Screen extends LitComponent {
       this._animate
     ) {
       this.renderRecent();
+    }
+  }
+
+  protected override willUpdate(_changedProperties: PropertyValues): void {
+    if (_changedProperties.has("_messages")) {
+      this._shouldShowTail = range(this._messages.length);
+      for (let i = 0; i < this._messages.length; i++) {
+          const current = this._messages[i];
+          const next = this._messages[i + 1];
+          const isLast = i === this._messages.length - 1;
+
+          const currentRole = current.role;
+          const currentTime = current.createdDatetime;
+
+          const nextRole = next?.role;
+          const nextTime = next?.createdDatetime;
+
+          const roleChanged = !next || currentRole !== nextRole;
+          const timeGap = !next || (nextTime - currentTime >= ONE_MINUTE);
+
+          // Conditions 1, 2, 3: Add tail if 
+          // the next message has a different role, 
+          // there's a large time gap,
+          // or it's the last message
+          if (roleChanged || timeGap || isLast) {
+            this._shouldShowTail[i] = true;
+          }
+      }
     }
   }
 
@@ -200,9 +199,7 @@ class Screen extends LitComponent {
   }
 
   protected override render() {
-    const isLast = (idx: number) => {
-      return this._senderLastIdx === idx || this._answerLastIdx === idx;
-    };
+    let prevMessage: ChatMessage | null = null;
 
     return html`
       <ios-chat-scroll
@@ -221,18 +218,31 @@ class Screen extends LitComponent {
           ${repeat(
             this._messages,
             (message) => message.id,
-            (message, idx) => html`
-              <li class=${classMap({
-                [message.role]: true,
-                "clickable": message.contents.some(msg => msg.type === "img"),
-                "audio": message.contents.some(msg => msg.type === "audio")
-              })}>
-                <ios-chat-message .message=${message}></ios-chat-message>
-                ${isLast(idx)
-                  ? html`<div class="tail ${message.role === "sender" ? "right" : "left"}"></div>`
-                  : undefined}
-              </li>
-            `
+            (message, idx) => {
+              // For ios-chat-divider
+              const dateStr = new Date(message.createdDatetime).toDateString();
+              const shouldShowDate =
+                prevMessage === null ||
+                new Date(prevMessage.createdDatetime).toDateString() !== dateStr;
+
+              prevMessage = message;
+
+              return html`
+                ${shouldShowDate 
+                    ? html`<ios-chat-date-divider .datetime=${message.createdDatetime}></ios-chat-date-divider>` 
+                    : undefined}
+                <li class=${classMap({
+                  [message.role]: true,
+                  "clickable": message.contents.some(msg => msg.type === "img"),
+                  "audio": message.contents.some(msg => msg.type === "audio")
+                })}>
+                  <ios-chat-message .message=${message}></ios-chat-message>
+                  ${this._shouldShowTail[idx]
+                    ? html`<div class="tail ${message.role === "sender" ? "right" : "left"}"></div>`
+                    : undefined}
+                </li>
+              `
+            }
           )}
         </ul>
         <div style=${styleMap({ transform: `translateY(${-this._inputHeight}px)`})}></div>
@@ -251,6 +261,9 @@ class Screen extends LitComponent {
       transition: var(--ease-out-quart) 500ms opacity;
     }
 
+    ios-chat-date-divider {
+      padding: 1em 0;
+    }
     li {
       position: relative;
       width: fit-content;
