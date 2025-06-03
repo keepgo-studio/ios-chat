@@ -39,6 +39,9 @@ class Attachment extends LitComponent {
   @property({ attribute: false })
   actorRef!: ChatMachineActorRef;
 
+  @property({ attribute: false })
+  excludeAttachmentList: string[] = [];
+
   @state()
   _disabled = false;
 
@@ -117,11 +120,13 @@ class Attachment extends LitComponent {
   protected override render() {
     if (this._disabled) return;
 
+    const filteredItems = items.filter(({ type }) => !this.excludeAttachmentList.includes(type));
+
     return html`
       <section class=${this._isOpen ? "open" : ""}>
         <div class="background" @click=${this.clickHandler}></div>
         <ul>
-          ${items.map(
+          ${filteredItems.map(
             (item, index) => html`
               <li>
                 <label for=${index}>

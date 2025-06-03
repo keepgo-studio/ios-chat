@@ -11,7 +11,13 @@ import { appStyleVars } from "./config/style";
 import { parseFontSizeStr, parsePaddingStr, type Padding } from "./lib/style-utils";
 import { styleMap } from "lit/directives/style-map.js";
 
-export type AppAttributeKey = "room-id" | "padding" | "mode" | "font-size";
+export type AppAttributeKey = 
+  | "room-id"
+  | "padding"
+  | "mode"
+  | "font-size"
+  | "exclude-attachments"
+  ;
 
 const TAG_NAME = "ios-chat";
 
@@ -25,16 +31,16 @@ class App extends LitComponent {
 
   @state()
   _fontSize: string | null = null;
-
   private _customFontSize: string | null = null
 
-  @state()
-  _customScreenPadding: Padding = {
+  private _customScreenPadding: Padding = {
     top: "0.625em",
     left: "0.75em",
     right: "0.75em",
     bottom: "0.625em",
   };
+
+  private _excludeAttachments: string[] = [];
 
   @query("ios-chat-screen")
   screenElem!: LitComponent;
@@ -70,6 +76,10 @@ class App extends LitComponent {
       const fontSize = this.getAttr<AppAttributeKey>("font-size");
       if (fontSize) {
         this._customFontSize = parseFontSizeStr(fontSize);
+      }
+
+      if (info.excludeAttachments) {
+        this._excludeAttachments = info.excludeAttachments.split(",");
       }
 
       this._actor.subscribe(snap => {
@@ -108,7 +118,10 @@ class App extends LitComponent {
       : html`
           <ios-chat-img-viewer>
             <div class="root" style=${styleMap({ fontSize: this._fontSize })}>
-              <ios-chat-attachment .actorRef=${this._actor}></ios-chat-attachment>
+              <ios-chat-attachment 
+                .excludeAttachmentList=${this._excludeAttachments}
+                .actorRef=${this._actor}
+              ></ios-chat-attachment>
               <ios-chat-screen
                 .padding=${this._customScreenPadding}
                 .actorRef=${this._actor}

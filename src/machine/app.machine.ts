@@ -2,7 +2,7 @@ import { assign, setup, type ActorRefFrom, type SnapshotFrom } from "xstate";
 import LitComponent from "@/config/component";
 import type { ChatMessage, ChatMessageContent, ChatMessageContentMap } from "@/models/chat-room";
 import type { ChatRoomId } from "@/lib/data-structure";
-import type SupportChatMode from "@/controller/chat-room";
+import type { SupportChatMode } from "@/controller/chat-room";
 import ChatRoomController from "@/controller/chat-room";
 import { AppError } from "@/config/error";
 import { logPrefix } from "@/config/console";
@@ -25,6 +25,11 @@ export function checkAppValid(roomRef: LitComponent) {
 
   const mode: SupportChatMode = rawMode === "text-only" ? "text-only" : "normal";
 
+  const excludeAttachments = roomRef.getAttr<AppAttributeKey>("exclude-attachments");
+  if (excludeAttachments && mode === "text-only") {
+    throw new AppError("CHAT_ROOM_ATTRIBUTE_ERROR", "excluding attahcments only works at 'normal' mode");
+  }
+
   console.info(logPrefix(`Initializing chat room (id: "${roomId}", mode "${mode}")`));
 
   // create chat room via controller
@@ -33,7 +38,8 @@ export function checkAppValid(roomRef: LitComponent) {
   return {
     roomId: roomId as ChatRoomId,
     roomRef,
-    mode
+    mode,
+    excludeAttachments
   };
 }
 
